@@ -5,8 +5,8 @@ namespace Database\Factories;
 use App\Models\Endereco;
 use App\Models\Nome;
 use App\Models\User;
+use App\Models\TypeUser;
 use Illuminate\Database\Eloquent\Factories\Factory;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
 /**
@@ -14,8 +14,8 @@ use Illuminate\Support\Facades\Hash;
  */
 class UserFactory extends Factory
 {
-
     protected $model = User::class;
+
     public function definition(): array
     {
         $endereco = Endereco::factory()->create();
@@ -28,10 +28,21 @@ class UserFactory extends Factory
             'email' => $this->faker->email,
             'password' => Hash::make($password),
             'datanasc' => $this->faker->dateTimeBetween('-80 years', '-18 years')->format('Y-m-d'),
-            'tipousu' => $this->faker->randomElement(['cliente', 'locador', 'prestador']),
+            'tipousu' => $this->faker->randomElement(['Cliente', 'Locador', 'Prestador']),
             'cpf' => $this->faker->numerify('###.###.###-##'),
             'cnpj' => $this->faker->numerify('##.###.###/####-##'),
             'endereco_id' => $endereco->id,
         ];
+    }
+
+    public function configure()
+    {
+        return $this->afterCreating(function (User $user) {
+            // Escolher um tipo de usuário aleatório para associar
+            $tipoUsuario = TypeUser::inRandomOrder()->first();
+
+            // Associar o usuário ao tipo de usuário na tabela pivot
+            $user->typeUsers()->attach($tipoUsuario->id);
+        });
     }
 }

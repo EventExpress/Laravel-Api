@@ -8,6 +8,7 @@ use App\Models\Anuncio;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use App\Models\User;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 
 class DatabaseSeeder extends Seeder
 {
@@ -16,7 +17,19 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-    //User::factory()->create();
-    User::factory()->create();
+        DB::beginTransaction();
+        //caso seja feito em ordem errada a criação dos outros seeders ele nao cria de forma erroneea e apresenta o erro
+
+        try {
+            User::factory()->create();
+
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollback();
+
+            throw $e;
+        }
+
+
     }
 }

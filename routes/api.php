@@ -3,33 +3,18 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserController;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
+// Registro de usuário
 Route::post('/register', [UserController::class, 'store']);
 
-Route::post('/login', function (Request $request) {
+// Login do usuário
+Route::post('/login', [AuthController::class, 'login']);
 
-    $credentials = $request->only('email','password');
+// Logout
+Route::middleware('auth:sanctum')->post('/user/logout',[AuthController::class, 'logout']);
 
-    if(Auth::attempt($credentials)){
-        $user = $request->user();
-
-        $token = $user->createToken('auth_token')->plainTextToken;
-
-        return response()->json([
-            'access_token' => $token,
-            'token_type' => 'Bearer',
-        ], 401);
-    }
-
-    return response()->json([
-        'message' => 'Usuario Invalido',
-    ]);
-
-});
-
+// Rota protegida para obter informações do usuário
 Route::middleware('auth:sanctum')->get('/user/profile', function (Request $request) {
-   return $request->user();
+    return $request->user();
 });
-

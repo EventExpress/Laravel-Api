@@ -65,4 +65,9 @@ class User extends Authenticatable
     public function anuncio() {
         return $this->hasMany(Anuncio::class);
     }
+
+    public function typeUsers()
+    {
+        return $this->belongsToMany(TypeUser::class, 'tipo_usuario', 'user_id', 'typeusers_id');
+    }
 }

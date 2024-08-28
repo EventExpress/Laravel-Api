@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\TypeUser;
 use App\Models\User;
 use App\Models\Endereco;
 use App\Models\Nome;
@@ -31,16 +32,16 @@ class UserController extends Controller
      */
     public function store(Request $request)
     {
-         $request->validate([
+        $request->validate([
             'nome' => 'required|string|min:4|max:255',
             'sobrenome' => 'required|string|min:4|max:255',
             'telefone' => 'required|string|min:10|max:15',
             'datanasc' => 'required|date',
-            'email' => 'required|email|min:5|max:255',
+            'email' => 'required|email|min:5|max:255|unique:users,email',
             'password' => 'required|string|min:8|max:255',
-            'tipousu' => 'required|string|min:3|max:50',
-            'cpf' => 'required|integer|min:11',
-            'cnpj' => $request->tipousu === 'Locador' ? 'required|string|min:14|max:14' : 'nullable',
+            'tipousu' => 'required|string|in:Cliente,Locador,Prestador',
+            'cpf' => 'required|integer|min:11|unique:users,cpf',
+            'cnpj' => $request->tipousu === 'Locador' ? 'required|string|min:14|max:14|unique:users,cnpj' : 'nullable',
             'cidade' => 'required|string|min:3|max:255',
             'cep' => 'required|string|min:8|max:9',
             'numero' => 'required|integer|min:1',
@@ -76,11 +77,21 @@ class UserController extends Controller
             $usuario->password = Hash::make($request['password']);
             $usuario->save();
 
+            $tipoUsuario = TypeUser::where('tipousu', $request->tipousu)->first();
+            if ($tipoUsuario) {
+                $usuario->typeUsers()->attach($tipoUsuario->id);
+            }
+
             DB::commit();
+
+
+            //apos criar o usuario é possivel logar diretamente no sistema...
+            $token = $usuario->createToken('Personal Access Token after register')->plainTextToken;
 
             return response()->json([
                 'message' => 'Usuário criado com sucesso!',
-                'user' => $usuario
+                'user' => $usuario,
+                'token' => $token,
             ], 201);
 
         } catch (\Exception $e) {

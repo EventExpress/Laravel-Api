@@ -20,11 +20,14 @@ return new class extends Migration
             $table->string('password');
             $table->rememberToken();
             $table->date('datanasc');
-            $table->enum('tipousu', ['cliente', 'locador', 'prestador']);
+            $table->string('tipousu');
             $table->string('cpf',11);
             $table->string('cnpj',14)->nullable();
             $table->foreignId('endereco_id')->constrained()->onDelete('cascade');
             $table->timestamps();
+
+            $table->foreign('nome_id')->references('id')->on('nomes')->onDelete('cascade');
+            $table->foreign('endereco_id')->references('id')->on('enderecos')->onDelete('cascade');
         });
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {
