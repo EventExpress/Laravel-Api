@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
 
 class UserController extends Controller
 {
@@ -122,89 +123,75 @@ class UserController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, User $user) : JsonResponse
+
+    public function update(Request $request, $id)
     {
-        // Validação dos dados com todos os campos como obrigatórios
-        $request->validate([
+        // Encontra o usuário pelo ID
+        $user = User::findOrFail($id);
+
+        $rules = [
             'nome' => 'sometimes|required|string|min:4|max:255',
             'sobrenome' => 'sometimes|required|string|min:4|max:255',
             'telefone' => 'sometimes|required|string|min:10|max:15',
             'datanasc' => 'sometimes|required|date',
-            'email' => 'sometimes|required|email|min:5|max:255|unique:users,email,' . $user->id,
-            'password' => 'nullable|string|min:8|max:255',
-            'tipousu' => 'sometimes|required|string|in:Cliente,Locador,Prestador',
-            'cpf' => 'sometimes|required|integer|min:11|unique:users,cpf,' . $user->id,
-            'cnpj' => $request->input('tipousu') === 'Locador' ? 'sometimes|required|string|min:14|max:14|unique:users,cnpj,' . $user->id : 'nullable',
+            'email' => [
+                'sometimes',
+                'required',
+                'email',
+                'min:5',
+                'max:255',
+                Rule::unique('users')->ignore($user->id),
+            ],
+            'password' => 'sometimes|required|string|min:8|max:255',
+            'tipousu' => 'sometimes|required|string|in:Locatario,Locador,Prestador',
+            'cpf' => [
+                'sometimes',
+                'required',
+                'integer',
+                'digits:11',
+                Rule::unique('users')->ignore($user->id),
+            ],
+            'cnpj' => $request->tipousu === 'Locador' ? 'sometimes|required|string|size:14|unique:users,cnpj,' . $user->id : 'nullable',
             'cidade' => 'sometimes|required|string|min:3|max:255',
             'cep' => 'sometimes|required|string|min:8|max:9',
             'numero' => 'sometimes|required|integer|min:1',
-            'bairro' => 'sometimes|required|string|min:3|max:255'
-        ]);
+            'bairro' => 'sometimes|required|string|min:3|max:255',
+        ];
+
+        $validatedData = $request->validate($rules);
 
         DB::beginTransaction();
 
         try {
-            // Atualiza ou cria o nome
-            if ($request->has('nome') || $request->has('sobrenome')) {
-                $nome = $user->nome ?? new Nome();
-                $nome->nome = $request->input('nome', $nome->nome);
-                $nome->sobrenome = $request->input('sobrenome', $nome->sobrenome);
-                $nome->save();
-                $user->nome_id = $nome->id;
+
+            $user->fill($validatedData);
+
+            if ($request->has(['nome', 'sobrenome'])) {
+                $user->nome->update($validatedData);
             }
 
-            // Atualiza ou cria o endereço
-            if ($request->has('cidade') || $request->has('cep') || $request->has('numero') || $request->has('bairro')) {
-                $endereco = $user->endereco ?? new Endereco();
-                $endereco->cidade = $request->input('cidade', $endereco->cidade);
-                $endereco->cep = $request->input('cep', $endereco->cep);
-                $endereco->numero = $request->input('numero', $endereco->numero);
-                $endereco->bairro = $request->input('bairro', $endereco->bairro);
-                $endereco->save();
-                $user->endereco_id = $endereco->id;
+            if ($request->has(['cidade', 'cep', 'numero', 'bairro'])) {
+                $user->endereco->update($validatedData);
             }
 
-            // Atualiza o usuário com os dados fornecidos
-            $user->telefone = $request->input('telefone', $user->telefone);
-            $user->datanasc = $request->input('datanasc', $user->datanasc);
-            $user->email = $request->input('email', $user->email);
-            $user->tipousu = $request->input('tipousu', $user->tipousu);
-            $user->cpf = $request->input('cpf', $user->cpf);
-            $user->cnpj = $request->input('cnpj', $user->cnpj);
-
-            // Atualiza a senha se fornecida
-            if ($request->filled('password')) {
-                $user->password = Hash::make($request->input('password'));
+            if ($request->has('type_users')) {
+                $user->typeUsers()->sync($request->input('type_users'));
             }
 
             $user->save();
 
-            // Atualiza os tipos de usuário se fornecido
-            if ($request->has('tipousu')) {
-                $tipoUsuario = TypeUser::where('tipousu', $request->tipousu)->first();
-                if ($tipoUsuario) {
-                    $user->typeUsers()->sync([$tipoUsuario->id]);
-                }
-            }
 
             DB::commit();
 
-            return response()->json([
-                'message' => 'Usuário atualizado com sucesso!',
-                'user' => $user,
-            ], 200);
-
+            return response()->json(['message' => 'Usuário atualizado com sucesso!', 'user' => $user], 200);
         } catch (\Exception $e) {
-            DB::rollback();
 
-            return response()->json([
-                'message' => 'Erro ao atualizar usuário',
-                'error' => $e->getMessage(),
-            ], 500);
+            DB::rollBack();
+
+            return response()->json(['message' => 'Erro ao atualizar usuário.', 'error' => $e->getMessage()], 500);
         }
     }
-
-    /**
+/**
      * Remove the specified resource from storage.
      */
     public function destroy(User $user) : JsonResponse

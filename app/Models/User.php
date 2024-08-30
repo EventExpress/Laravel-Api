@@ -54,9 +54,11 @@ class User extends Authenticatable
         ];
     }
 
-    public function nome() {
-        return $this->hasOne(Nome::class);
+    public function nome()
+    {
+        return $this->belongsTo(Nome::class, 'nome_id');
     }
+
 
     public function endereco() {
         return $this->belongsTo(Endereco::class);
