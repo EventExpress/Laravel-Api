@@ -5,16 +5,19 @@ use App\Http\Controllers\UserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-// Registro de usuário
-Route::post('/register', [UserController::class, 'store']);
 
-// Login do usuário
+// Rotas públicas (registro e login)
+Route::post('/register', [UserController::class, 'store']);
 Route::post('/login', [AuthController::class, 'login']);
 
-// Logout
-Route::middleware('auth:sanctum')->post('/user/logout',[AuthController::class, 'logout']);
+// Rotas protegidas
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/user/logout', [AuthController::class, 'logout']);
+    Route::get('/user/profile', [AuthController::class, 'profile']);
 
-// Rota protegida para obter informações do usuário
-Route::middleware('auth:sanctum')->get('/user/profile', function (Request $request) {
-    return $request->user();
+    // Rotas para operações CRUD de usuários
+    Route::get('/user/{id}', [UserController::class, 'show']);
+    Route::put('/user/{id}', [UserController::class, 'update']);
+    Route::delete('/user/{id}', [UserController::class, 'destroy']);
 });
+

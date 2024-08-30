@@ -6,7 +6,9 @@ use App\Models\TypeUser;
 use App\Models\User;
 use App\Models\Endereco;
 use App\Models\Nome;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
@@ -15,7 +17,7 @@ class UserController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index() : JsonResponse
     {
         //Busca os usuarios do banco de dados, ordenados pelo id em ordem decressente,paginados
         $users = User::orderby('id')->paginate(2);
@@ -30,7 +32,7 @@ class UserController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(Request $request): JsonResponse
     {
         $request->validate([
             'nome' => 'required|string|min:4|max:255',
@@ -109,27 +111,124 @@ class UserController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(User $user)
+    public function show(User $user) : JsonResponse
     {
         return response()->json([
-            'status'=> true,
-            'users' => $user,
-        ],200);
+            'status' => true,
+            'user' => $user,
+        ], 200);
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, User $user)
+    public function update(Request $request, User $user) : JsonResponse
     {
-        //
+        // Validação dos dados com todos os campos como obrigatórios
+        $request->validate([
+            'nome' => 'sometimes|required|string|min:4|max:255',
+            'sobrenome' => 'sometimes|required|string|min:4|max:255',
+            'telefone' => 'sometimes|required|string|min:10|max:15',
+            'datanasc' => 'sometimes|required|date',
+            'email' => 'sometimes|required|email|min:5|max:255|unique:users,email,' . $user->id,
+            'password' => 'nullable|string|min:8|max:255',
+            'tipousu' => 'sometimes|required|string|in:Cliente,Locador,Prestador',
+            'cpf' => 'sometimes|required|integer|min:11|unique:users,cpf,' . $user->id,
+            'cnpj' => $request->input('tipousu') === 'Locador' ? 'sometimes|required|string|min:14|max:14|unique:users,cnpj,' . $user->id : 'nullable',
+            'cidade' => 'sometimes|required|string|min:3|max:255',
+            'cep' => 'sometimes|required|string|min:8|max:9',
+            'numero' => 'sometimes|required|integer|min:1',
+            'bairro' => 'sometimes|required|string|min:3|max:255'
+        ]);
+
+        DB::beginTransaction();
+
+        try {
+            // Atualiza ou cria o nome
+            if ($request->has('nome') || $request->has('sobrenome')) {
+                $nome = $user->nome ?? new Nome();
+                $nome->nome = $request->input('nome', $nome->nome);
+                $nome->sobrenome = $request->input('sobrenome', $nome->sobrenome);
+                $nome->save();
+                $user->nome_id = $nome->id;
+            }
+
+            // Atualiza ou cria o endereço
+            if ($request->has('cidade') || $request->has('cep') || $request->has('numero') || $request->has('bairro')) {
+                $endereco = $user->endereco ?? new Endereco();
+                $endereco->cidade = $request->input('cidade', $endereco->cidade);
+                $endereco->cep = $request->input('cep', $endereco->cep);
+                $endereco->numero = $request->input('numero', $endereco->numero);
+                $endereco->bairro = $request->input('bairro', $endereco->bairro);
+                $endereco->save();
+                $user->endereco_id = $endereco->id;
+            }
+
+            // Atualiza o usuário com os dados fornecidos
+            $user->telefone = $request->input('telefone', $user->telefone);
+            $user->datanasc = $request->input('datanasc', $user->datanasc);
+            $user->email = $request->input('email', $user->email);
+            $user->tipousu = $request->input('tipousu', $user->tipousu);
+            $user->cpf = $request->input('cpf', $user->cpf);
+            $user->cnpj = $request->input('cnpj', $user->cnpj);
+
+            // Atualiza a senha se fornecida
+            if ($request->filled('password')) {
+                $user->password = Hash::make($request->input('password'));
+            }
+
+            $user->save();
+
+            // Atualiza os tipos de usuário se fornecido
+            if ($request->has('tipousu')) {
+                $tipoUsuario = TypeUser::where('tipousu', $request->tipousu)->first();
+                if ($tipoUsuario) {
+                    $user->typeUsers()->sync([$tipoUsuario->id]);
+                }
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Usuário atualizado com sucesso!',
+                'user' => $user,
+            ], 200);
+
+        } catch (\Exception $e) {
+            DB::rollback();
+
+            return response()->json([
+                'message' => 'Erro ao atualizar usuário',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(User $user)
+    public function destroy(User $user) : JsonResponse
     {
-        //
+        DB::beginTransaction();
+
+        try {
+            $user->typeUsers()->detach();
+
+            $user->delete();
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Usuário deletado com sucesso!',
+            ], 200);
+
+        } catch (\Exception $e) {
+            DB::rollback();
+
+            return response()->json([
+                'message' => 'Erro ao deletar usuário',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
 }
