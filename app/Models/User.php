@@ -61,7 +61,7 @@ class User extends Authenticatable
 
 
     public function endereco() {
-        return $this->belongsTo(Endereco::class);
+        return $this->belongsTo(Endereco::class, 'endereco_id');
     }
 
     public function anuncio() {

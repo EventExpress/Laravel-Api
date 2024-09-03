@@ -20,7 +20,6 @@ return new class extends Migration
             $table->string('password');
             $table->rememberToken();
             $table->date('datanasc');
-            $table->string('tipousu');
             $table->string('cpf',11);
             $table->string('cnpj',14)->nullable();
             $table->foreignId('endereco_id')->constrained()->onDelete('cascade');

@@ -28,7 +28,6 @@ class UserFactory extends Factory
             'email' => $this->faker->email,
             'password' => Hash::make($password),
             'datanasc' => $this->faker->dateTimeBetween('-80 years', '-18 years')->format('Y-m-d'),
-            'tipousu' => $this->faker->randomElement(['Cliente', 'Locador', 'Prestador']),
             'cpf' => $this->faker->numerify('###.###.###-##'),
             'cnpj' => $this->faker->numerify('##.###.###/####-##'),
             'endereco_id' => $endereco->id,

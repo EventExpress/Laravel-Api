@@ -31,6 +31,11 @@ class TypeUserSeeder extends Seeder
                 'tipousu' => 'Prestador',
                 'created_at' => Carbon::now(),
             ],
+            [
+                'tipousu' => 'admin',
+                'created_at' => Carbon::now(),
+            ],
+
         ];
 
         DB::table('type_users')->insert($type);

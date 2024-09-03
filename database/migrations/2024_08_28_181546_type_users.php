@@ -13,9 +13,8 @@ return new class extends Migration
     {
         Schema::create('type_users', function (Blueprint $table) {
             $table->id();
-            $table->string('tipousu', 120);
+            $table->enum('tipousu', ['Locatario', 'Locador', 'Prestador', 'admin']);
             $table->timestamps();
-
         });
     }
 
