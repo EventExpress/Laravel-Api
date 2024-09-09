@@ -16,15 +16,14 @@ return new class extends Migration
             $table->foreignId('nome_id')->constrained()->onDelete('cascade');
             $table->string('telefone',12);
             $table->string('email')->unique();
-            $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
-            $table->rememberToken();
+            $table->softDeletes();
             $table->date('datanasc');
             $table->string('cpf',11);
             $table->string('cnpj',14)->nullable();
             $table->foreignId('endereco_id')->constrained()->onDelete('cascade');
             $table->timestamps();
-
+            $table->rememberToken();
             $table->foreign('nome_id')->references('id')->on('nomes')->onDelete('cascade');
             $table->foreign('endereco_id')->references('id')->on('enderecos')->onDelete('cascade');
         });

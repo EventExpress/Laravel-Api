@@ -102,7 +102,12 @@ class AuthController extends Controller
                 ], 401);
             }
 
-            return response()->json($user, 200);
+            $user = $user->load(['nome', 'endereco', 'typeUsers']);
+
+            return response()->json([
+                'status' => true,
+                'user' => $user,
+            ], 200);
         } catch (Exception $e) {
             return response()->json([
                 'message' => 'An error occurred while retrieving the user profile',

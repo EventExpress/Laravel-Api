@@ -4,13 +4,14 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
-    use HasApiTokens,HasFactory, Notifiable;
+    use HasApiTokens,HasFactory, Notifiable,SoftDeletes;
 
 
     /**
@@ -71,5 +72,10 @@ class User extends Authenticatable
     public function typeUsers()
     {
         return $this->belongsToMany(TypeUser::class, 'tipo_usuario', 'user_id', 'typeusers_id');
+    }
+
+    public function avaliacao()
+    {
+        return $this->belongsToMany(User::class, 'avaliacao_users', 'users_id', 'avaliacao_id');
     }
 }

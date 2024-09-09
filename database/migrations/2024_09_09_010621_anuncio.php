@@ -11,13 +11,15 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('anuncios', function (Blueprint $table){
+        Schema::create('anuncios', function (Blueprint $table) {
             $table->id();
+            $table->softDeletes();
             $table->string('titulo', 80);
             $table->foreignId('endereco_id')->constrained()->onDelete('cascade');
+            $table->foreignId('avaliacoes_id')->references('id')->on('avaliacoes_id')->onDelete('cascade');
             $table->string('capacidade', 50);
             $table->string('descricao', 100);
-            $table->foreignId('usuario_id')->constrained('users')->onDelete('cascade');
+            $table->foreignId('user_id')->references('id')->on('users')->onDelete('cascade');
             $table->decimal('valor', 10);
             $table->date('agenda');
             $table->timestamps();

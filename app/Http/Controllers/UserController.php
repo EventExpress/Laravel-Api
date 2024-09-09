@@ -107,12 +107,22 @@ class UserController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(User $user) : JsonResponse
+    public function show($id) : JsonResponse
     {
-        return response()->json([
-            'status' => true,
-            'user' => $user,
-        ], 200);
+        try {
+            $user = User::with(['nome', 'endereco', 'typeUsers'])->findOrFail($id);
+
+            return response()->json([
+                'status' => true,
+                'user' => $user,
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Usuário não encontrado',
+                'error' => $e->getMessage(),
+            ], 404);
+        }
     }
 
     /**
@@ -190,11 +200,13 @@ class UserController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(User $user) : JsonResponse
+    public function destroy($id) : JsonResponse
     {
         DB::beginTransaction();
 
         try {
+            $user = User::findOrFail($id);
+
             $user->typeUsers()->detach();
 
             $user->delete();
@@ -206,7 +218,7 @@ class UserController extends Controller
             ], 200);
 
         } catch (\Exception $e) {
-            DB::rollback();
+            DB::rollBack();
 
             return response()->json([
                 'message' => 'Erro ao deletar usuário',
@@ -214,4 +226,32 @@ class UserController extends Controller
             ], 500);
         }
     }
+
+    public function restore($id) : JsonResponse
+    {
+        DB::beginTransaction();
+
+        try {
+            $user = User::withTrashed()->findOrFail($id); // Inclui registros excluídos
+
+            $user->restore(); // Restaura o usuário
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Usuário restaurado com sucesso!',
+                'user' => $user
+            ], 200);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'message' => 'Erro ao restaurar usuário',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+
 }

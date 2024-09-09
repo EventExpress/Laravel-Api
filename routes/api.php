@@ -19,14 +19,16 @@ Route::middleware('auth:sanctum')->group(function () {
     // Rotas para operações CRUD de usuários
     Route::get('/user/{id}', [UserController::class, 'show']);
     Route::put('/user/{id}', [UserController::class, 'update']);
-    Route::delete('/user/{id}', [UserController::class, 'destroy']);
+    Route::delete('/user/{id}', [UserController::class, 'destroy']); //softdelet para não perder dados/historico
+
 });
 
 Route::middleware(['auth:sanctum', 'admin'])->group(function () {
     Route::get('/admin', function () {
         return "Hello Admin";
-        //testa usuario se é um adm
     });
     Route::get('/admin/dashboard', [AdminController::class, 'dashboard'])->name('api.admin.dashboard');
+
+    Route::post('/user/{id}/restore', [UserController::class, 'restore']); // restaura os dados "excluidos" se for um administrador
 });
 

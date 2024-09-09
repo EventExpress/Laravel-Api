@@ -4,10 +4,13 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
 
 class Anuncio extends Model
 {
-    use HasFactory;
+    use HasApiTokens,HasFactory, Notifiable, SoftDeletes;
     protected $fillable =
     [
         'titulo',
@@ -34,6 +37,10 @@ class Anuncio extends Model
 
     public function nome() {
         return $this->hasMany(Nome::class);
+    }
+
+    public function avaliacao() {
+        return $this->hasMany(Avaliacao::class);
     }
 
 }
