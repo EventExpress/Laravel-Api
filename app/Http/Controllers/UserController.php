@@ -227,31 +227,4 @@ class UserController extends Controller
         }
     }
 
-    public function restore($id) : JsonResponse
-    {
-        DB::beginTransaction();
-
-        try {
-            $user = User::withTrashed()->findOrFail($id); // Inclui registros excluídos
-
-            $user->restore(); // Restaura o usuário
-
-            DB::commit();
-
-            return response()->json([
-                'message' => 'Usuário restaurado com sucesso!',
-                'user' => $user
-            ], 200);
-
-        } catch (\Exception $e) {
-            DB::rollBack();
-
-            return response()->json([
-                'message' => 'Erro ao restaurar usuário',
-                'error' => $e->getMessage(),
-            ], 500);
-        }
-    }
-
-
 }

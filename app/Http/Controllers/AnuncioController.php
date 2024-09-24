@@ -36,7 +36,7 @@ class AnuncioController extends Controller
     {
         $user = Auth::user();
 
-        if ($user->tipousu !== 'Locador') {
+        if ($user->typeUsers->first()->tipousu !== 'locador') {
             return response()->json([
                 'status' => false,
                 'error' => 'Você não tem permissão para criar anúncios.'
@@ -44,7 +44,8 @@ class AnuncioController extends Controller
         }
 
         $user_id = $user->id;
-        $anuncios = Anuncio::where('usuario_id', $user_id)->get();
+        $anuncios = Anuncio::where('user_id', $user_id)->get();
+
         return response()->json([
             'status' => true,
             'anuncios' => $anuncios,
@@ -58,7 +59,7 @@ class AnuncioController extends Controller
     {
         $user = Auth::user();
 
-        if ($user->tipousu !== 'Locador') {
+        if ($user->typeUsers->first()->tipousu !== 'locador') {
             return response()->json([
                 'status' => false,
                 'error' => 'Você não tem permissão para criar anúncios.'
@@ -66,6 +67,7 @@ class AnuncioController extends Controller
         }
 
         $categorias = Categoria::all();
+
         return response()->json([
             'status' => true,
             'user' => $user,
@@ -76,8 +78,7 @@ class AnuncioController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-
-        public function store(Request $request)
+    public function store(Request $request)
     {
         $validatedData = $request->validate([
             'titulo' => 'required|string|min:4|max:255',
@@ -108,9 +109,9 @@ class AnuncioController extends Controller
         }
 
         $anuncio = new Anuncio();
-        $anuncio->usuario_id = Auth::id();
-        $anuncio->titulo = $validatedData['titulo'];
+        $anuncio->user_id = Auth::id();  // Ajuste de 'usuario_id' para 'user_id'
         $anuncio->endereco_id = $endereco->id;
+        $anuncio->titulo = $validatedData['titulo'];
         $anuncio->capacidade = $validatedData['capacidade'];
         $anuncio->descricao = $validatedData['descricao'];
         $anuncio->valor = $validatedData['valor'];
@@ -124,6 +125,7 @@ class AnuncioController extends Controller
             ], 500);
         }
 
+        // Anexar categorias ao anúncio
         $anuncio->categorias()->attach($validatedData['categoriaId']);
 
         return response()->json([
@@ -149,7 +151,7 @@ class AnuncioController extends Controller
             ->orWhere('titulo', 'like', "%$search%")
             ->orWhere('capacidade', 'like', "%$search%")
             ->orWhere('descricao', 'like', "%$search%")
-            ->orWhereHas('usuario', function ($query) use ($search) {
+            ->orWhereHas('user', function ($query) use ($search) {
                 $query->where('nome', 'like', "%$search%");
             })
             ->orWhere('valor', 'like', "%$search%")
@@ -171,7 +173,7 @@ class AnuncioController extends Controller
 
         $user = Auth::user();
 
-        if (!$anuncio || $anuncio->usuario_id != $user->id) {
+        if (!$anuncio || $anuncio->user_id != $user->id) {
             return response()->json([
                 'status' => false,
                 'error' => 'Anúncio não encontrado ou você não tem permissão para editá-lo.'
@@ -208,7 +210,7 @@ class AnuncioController extends Controller
         $user = Auth::user();
         $anuncio = Anuncio::find($id);
 
-        if (!$anuncio || $anuncio->usuario_id != $user->id) {
+        if (!$anuncio || $anuncio->user_id != $user->id) {
             return response()->json([
                 'status' => false,
                 'error' => 'Anúncio não encontrado ou você não tem permissão para editá-lo.'
@@ -246,7 +248,7 @@ class AnuncioController extends Controller
         $user = Auth::user();
         $anuncio = Anuncio::find($id);
 
-        if (!$anuncio || $anuncio->usuario_id != $user->id) {
+        if (!$anuncio || $anuncio->user_id != $user->id) {
             return response()->json([
                 'status' => false,
                 'error' => 'Anúncio não encontrado ou você não tem permissão para excluí-lo.'
@@ -258,7 +260,7 @@ class AnuncioController extends Controller
 
         return response()->json([
             'status' => true,
-            'message' => 'Anúncio excluído com sucesso.',
+            'message' => 'Anúncio excluído com sucesso.'
         ], 200);
     }
 }

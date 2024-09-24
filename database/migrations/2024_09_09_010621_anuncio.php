@@ -16,7 +16,6 @@ return new class extends Migration
             $table->softDeletes();
             $table->string('titulo', 80);
             $table->foreignId('endereco_id')->constrained()->onDelete('cascade');
-            $table->foreignId('avaliacoes_id')->references('id')->on('avaliacoes_id')->onDelete('cascade');
             $table->string('capacidade', 50);
             $table->string('descricao', 100);
             $table->foreignId('user_id')->references('id')->on('users')->onDelete('cascade');

@@ -12,17 +12,17 @@ class Avaliacao extends Model
     use HasApiTokens, HasFactory, Notifiable;
 
     protected $fillable = [
+        'user_id', // Adicione isso para permitir o preenchimento em massa
         'nota',
         'comentario',
     ];
 
-    public function anuncio() {
-        return $this->belongsToMany(User::class, 'avaliacao_anuncio', 'avaliacao_id', 'anuncio_id');
+    public function anuncios() {
+        return $this->belongsToMany(Anuncio::class, 'avaliacao_anuncio', 'avaliacao_id', 'anuncio_id');
     }
 
-    public function users()
-    {
-        return $this->belongsToMany(User::class, 'avaliacao_users', 'avaliacao_id', 'user_id');
+    public function users() {
+        return $this->belongsTo(User::class, 'user_id'); // Relacionamento com o User
     }
 
     public function servico() {
