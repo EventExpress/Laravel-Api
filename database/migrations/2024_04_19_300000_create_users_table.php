@@ -14,17 +14,16 @@ return new class extends Migration
         Schema::create('users', function (Blueprint $table) {
             $table->id();
             $table->foreignId('nome_id')->constrained()->onDelete('cascade');
-            $table->string('telefone',12);
+            $table->string('telefone',15);
             $table->string('email')->unique();
             $table->string('password');
             $table->softDeletes();
             $table->date('datanasc');
-            $table->string('cpf',11);
-            $table->string('cnpj',14)->nullable();
+            $table->string('cpf',14);
+            $table->string('cnpj',18)->nullable();
             $table->foreignId('endereco_id')->constrained()->onDelete('cascade');
             $table->timestamps();
             $table->rememberToken();
-            $table->foreign('endereco_id')->references('id')->on('enderecos')->onDelete('cascade');
         });
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {

@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('avaliacao_anuncio', function (Blueprint $table) {
             $table->unsignedBigInteger('avaliacao_id');
             $table->unsignedBigInteger('anuncio_id');
-            $table->foreign('anuncio_id')->references('id')->on('anuncio')->onDelete('cascade');
+            $table->foreign('anuncio_id')->references('id')->on('anuncios')->onDelete('cascade');
             $table->foreign('avaliacao_id')->references('id')->on('avaliacoes')->onDelete('cascade');
             $table->timestamps();
         });
