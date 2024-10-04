@@ -24,7 +24,6 @@ return new class extends Migration
             $table->foreignId('endereco_id')->constrained()->onDelete('cascade');
             $table->timestamps();
             $table->rememberToken();
-            $table->foreign('nome_id')->references('id')->on('nomes')->onDelete('cascade');
             $table->foreign('endereco_id')->references('id')->on('enderecos')->onDelete('cascade');
         });
 
