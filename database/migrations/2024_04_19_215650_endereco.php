@@ -12,7 +12,7 @@ return new class extends Migration
         Schema::create('enderecos', function (Blueprint $table){
             $table->id();
             $table->string('cidade', 50);
-            $table->string('cep',  8);
+            $table->string('cep',  10);
             $table->string('numero', 12);
             $table->string('bairro', 50);
             $table->timestamps();

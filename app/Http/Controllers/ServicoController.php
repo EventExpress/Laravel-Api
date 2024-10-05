@@ -13,7 +13,7 @@ class ServicoController extends Controller
     public function meusServicos()
     {
         $user = Auth::user();
-        if ($user->tipousu !== 'Prestador') {
+        if ($user->typeUsers->first()->tipousu !== 'prestador') {
             return response()->json([
                 'status' => false,
                 'error' => 'Você não tem permissão para criar serviços.'
@@ -32,7 +32,7 @@ class ServicoController extends Controller
     {
         $user = Auth::user();
 
-        if ($user->tipousu !== 'Prestador') {
+        if ($user->typeUsers->first()->tipousu !== 'prestador') {
             return response()->json([
                 'status' => false,
                 'error' => 'Você não tem permissão para criar serviços.'
@@ -60,7 +60,7 @@ class ServicoController extends Controller
         ]);
         
         $servico = new Servico();
-        $servico->usuario_id = Auth::id();
+        $servico->user_id = Auth::id();
         $servico->titulo = $validatedData['titulo'];
         $servico->cidade = $validatedData['cidade'];
         $servico->bairro = $validatedData['bairro'];
@@ -95,7 +95,7 @@ class ServicoController extends Controller
                 ->orWhere('descricao', 'like', "%$search%")
                 ->orWhere('valor','like',"%$search%")
                 ->orWhere('agenda', 'like', "%$search%")
-                ->orWhereHas('usuario', function ($query) use ($search) {
+                ->orWhereHas('user', function ($query) use ($search) {
                     $query->where('nome', 'like', "%$search%");
                 })
                 ->get();
@@ -112,7 +112,7 @@ class ServicoController extends Controller
 
         $user = Auth::user();
 
-        if (!$servico || $servico->usuario_id != $user->id) {
+        if (!$servico || $servico->user_id != $user->id) {
             return response()->json([
                 'status' => false,
                 'error' => 'Serviço não encontrado ou você não tem permissão para editá-lo.'
@@ -143,7 +143,7 @@ class ServicoController extends Controller
         $user = Auth::user();
         $servico = Servico::find($id);
 
-        if (!$servico || $servico->usuario_id != $user->id) {
+        if (!$servico || $servico->user_id != $user->id) {
             return response()->json([
                 'status' => false,
                 'error' => 'Serviço não encontrado ou você não tem permissão para editá-lo.'
@@ -171,7 +171,7 @@ class ServicoController extends Controller
         $user = Auth::user();
         $servico = Servico::find($id);
 
-        if (!$servico || $servico->usuario_id != $user->id) {
+        if (!$servico || $servico->user_id != $user->id) {
             return response()->json([
                 'status' => false,
                 'error' => 'Serviço não encontrado ou você não tem permissão para excluí-lo.'

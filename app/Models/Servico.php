@@ -32,11 +32,7 @@ class Servico extends Model
         return $this->belongsTo(User::class);
     }
 
-    public function nome() {
-        return $this->hasMany(Nome::class);
-    }
-
     public function avaliacao() {
-        return $this->hasMany(Avaliacao::class);
+        return $this->belongsToMany(Avaliacao::class, 'avaliacao_servico', 'servico_id', 'avaliacao_id');;
     }
 }

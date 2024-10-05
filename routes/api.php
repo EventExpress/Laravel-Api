@@ -3,9 +3,8 @@
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserController;
-use Illuminate\Http\Request;
+use App\Http\Controllers\AnuncioController;
 use Illuminate\Support\Facades\Route;
-
 
 // Rotas públicas (registro e login)
 Route::post('/register', [UserController::class, 'store']);
@@ -13,22 +12,33 @@ Route::post('/login', [AuthController::class, 'login']);
 
 // Rotas protegidas
 Route::middleware('auth:sanctum')->group(function () {
+    // Rotas para usuário
     Route::post('/user/logout', [AuthController::class, 'logout']);
     Route::get('/user/profile', [AuthController::class, 'profile']);
-
-    // Rotas para operações CRUD de usuários
     Route::get('/user/{id}', [UserController::class, 'show']);
     Route::put('/user/{id}', [UserController::class, 'update']);
-    Route::delete('/user/{id}', [UserController::class, 'destroy']); //softdelet para não perder dados/historico
+    Route::delete('/user/{id}', [UserController::class, 'destroy']); // Soft delete
 
+    // Rotas para anúncios
+    Route::get('/anuncios', [AnuncioController::class, 'index']);
+    Route::post('/anuncios', [AnuncioController::class, 'store']);
+    Route::get('/anuncios/meus', [AnuncioController::class, 'meusAnuncios']);
+    Route::get('/anuncios/{id}', [AnuncioController::class, 'show']);
+    Route::put('/anuncios/{id}', [AnuncioController::class, 'update']);
+    Route::delete('/anuncios/{id}', [AnuncioController::class, 'destroy']);
+
+    // Rota de busca por anúncios sem autenticação
+    Route::get('/anuncios/buscar', [AnuncioController::class, 'indexNoAuth']);
 });
 
+// Rotas protegidas para administradores
 Route::middleware(['auth:sanctum', 'admin'])->group(function () {
     Route::get('/admin', function () {
         return "Hello Admin";
     });
+
     Route::get('/admin/dashboard', [AdminController::class, 'dashboard'])->name('api.admin.dashboard');
 
-    Route::post('/user/{id}/restore', [UserController::class, 'restore']); // restaura os dados "excluidos" se for um administrador
+    // Restaurar usuários ou anúncios excluídos (soft delete)
+    Route::post('/admin/{id}/restore', [AdminController::class, 'restore']);
 });
-
