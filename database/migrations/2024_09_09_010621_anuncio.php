@@ -19,7 +19,6 @@ return new class extends Migration
             $table->foreignId('avaliacoes_id')->references('id')->on('avaliacoes_id')->onDelete('cascade');
             $table->string('capacidade', 50);
             $table->string('descricao', 100);
-            $table->foreignId('categoria_id')->references('id')->on('categorias')->onDelete('cascade');
             $table->foreignId('user_id')->references('id')->on('users')->onDelete('cascade');
             $table->decimal('valor', 10);
             $table->date('agenda');
