@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->softDeletes();
             $table->string('titulo',80);
-            $table->foreignId('user_id')->references('id')->on('users')->onDelete('cascade');
+            $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->string('descricao',100);
             $table->decimal('valor', 10);
             $table->date('agenda');

@@ -18,7 +18,6 @@ return new class extends Migration
             $table->string('comentario')->nullable();
             $table->timestamps();
 
-            // Definindo a chave estrangeira
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
         });
     }

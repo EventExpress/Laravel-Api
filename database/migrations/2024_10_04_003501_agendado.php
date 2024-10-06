@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('agendados', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->references('id')->on('users')->onDelete('cascade');
+            $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->foreignId('anuncio_id')->constrained()->onDelete('cascade');
             $table->foreignId('servicos_id')->constrained()->onDelete('cascade');
             $table->foreignId('comprovante_id')->constrained()->onDelete('cascade');
