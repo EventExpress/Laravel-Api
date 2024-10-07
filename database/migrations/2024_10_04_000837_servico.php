@@ -19,6 +19,8 @@ return new class extends Migration
             $table->string('descricao',100);
             $table->decimal('valor', 10);
             $table->date('agenda');
+            $table->string('cidade', 50);
+            $table->string('bairro', 50);
             $table->timestamps();
         });
     }
