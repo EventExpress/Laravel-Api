@@ -8,8 +8,17 @@ use App\Models\Categoria;
 use Illuminate\Http\Request;
 
 class ServicoController extends Controller
-{
+{   
+    public function index()
+    {
+        $servicos = Servico::all();
 
+        return response()->json([
+            'status' => true,
+            'servicos' => $servicos,
+        ], 200);
+    }
+    
     public function meusServicos()
     {
         $user = Auth::user();

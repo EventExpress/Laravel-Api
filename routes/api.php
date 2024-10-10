@@ -29,6 +29,15 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Rota de busca por anúncios sem autenticação
     Route::get('/anuncios/buscar', [AnuncioController::class, 'indexNoAuth']);
+
+    //Rotas para serviços
+    Route::get('/servicos', [ServicoController::class, 'index']);
+    Route::get('/servicos/meus', [ServicoController::class, 'meusServicos']);
+    Route::get('/servicos/create', [ServicoController::class, 'create']);
+    Route::post('/servicos', [ServicoController::class, 'store']);
+    Route::get('/servicos/{id}/edit', [ServicoController::class, 'edit']);
+    Route::put('/servicos/{id}', [ServicoController::class, 'update']);
+    Route::delete('/servicos/{id}', [ServicoController::class, 'destroy']);
 });
 
 // Rotas protegidas para administradores
