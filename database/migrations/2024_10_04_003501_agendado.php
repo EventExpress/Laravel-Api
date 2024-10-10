@@ -15,7 +15,6 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->foreignId('anuncio_id')->constrained()->onDelete('cascade');
-            $table->foreignId('servicos_id')->constrained()->onDelete('cascade');
             $table->foreignId('comprovante_id')->constrained()->onDelete('cascade');
             $table->softDeletes();
             $table->string('formapagamento', 50);
