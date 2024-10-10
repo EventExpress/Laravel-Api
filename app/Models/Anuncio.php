@@ -38,4 +38,9 @@ class Anuncio extends Model
     public function avaliacoes() {
         return $this->belongsToMany(Avaliacao::class, 'avaliacao_anuncio', 'anuncio_id', 'avaliacao_id'); // Ajuste para relacionamento muitos para muitos
     }
+
+    public function imagens()
+    {
+        return $this->hasMany(ImagemAnuncio::class);
+    }
 }

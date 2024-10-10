@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\TypeUser;
 use App\Models\User;
 use App\Models\Endereco;
-use App\Models\Nome;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -55,10 +54,6 @@ class UserController extends Controller
         DB::beginTransaction();
 
         try {
-            $nome = new Nome();
-            $nome->nome = $request->nome;
-            $nome->sobrenome = $request->sobrenome;
-            $nome->save();
 
             $endereco = new Endereco();
             $endereco->cidade = $request->cidade;
@@ -68,7 +63,8 @@ class UserController extends Controller
             $endereco->save();
 
             $usuario = new User();
-            $usuario->nome_id = $nome->id;
+            $usuario->nome = $request->nome;
+            $usuario->sobrenome = $request->sobrenome;
             $usuario->telefone = $request->telefone;
             $usuario->datanasc = $request->datanasc;
             $usuario->email = $request->email;
@@ -110,7 +106,7 @@ class UserController extends Controller
     public function show($id) : JsonResponse
     {
         try {
-            $user = User::with(['nome', 'endereco', 'typeUsers'])->findOrFail($id);
+            $user = User::with(['endereco', 'typeUsers'])->findOrFail($id);
 
             return response()->json([
                 'status' => true,
@@ -172,10 +168,6 @@ class UserController extends Controller
             unset($validatedData['tipousu']);
 
             $user->update($validatedData);
-
-            if ($user->nome) {
-                $user->nome->update($request->only(['nome', 'sobrenome']));
-            }
 
             if ($user->endereco) {
                 $user->endereco->update($request->only(['cidade', 'cep', 'numero', 'bairro']));

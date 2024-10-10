@@ -20,7 +20,8 @@ class User extends Authenticatable
      * @var array<int, string>
      */
     protected $fillable = [
-        'nome_id',
+        'nome',
+        'sobrenome',
         'telefone',
         'email',
         'password',
@@ -54,12 +55,6 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
-
-    public function nome()
-    {
-        return $this->belongsTo(Nome::class, 'nome_id');
-    }
-
 
     public function endereco() {
         return $this->belongsTo(Endereco::class, 'endereco_id');

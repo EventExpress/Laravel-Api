@@ -11,11 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('nomes', function (Blueprint $table){
-           $table->id();
-           $table->string('nome',120);
-           $table->string('sobrenome',120);
-           $table->timestamps();
+        Schema::create('imagem_anuncios', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('anuncio_id')->constrained()->onDelete('cascade');
+            $table->string('image_path', 255);
+            $table->boolean('is_main')->default(false);
+            $table->timestamps();
         });
     }
 
@@ -24,6 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('nome');
+        Schema::dropIfExists('imagem_anuncios');
     }
 };
