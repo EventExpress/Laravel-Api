@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\ServicoController;
+use App\Http\Controllers\AgendadoController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserController;

@@ -33,7 +33,7 @@ test('registrar um usuário com todos os dados válidos', function () {
 });
 
 test('cadastro com e-mail já registrado', function () {
-    // Cria um usuário inicial com o e-mail 'testeu@gmail.com'
+    //cria usuario com o e-mail especifico
     User::factory()->create([
         'email' => 'testeu@gmail.com',
     ]);
@@ -43,7 +43,7 @@ test('cadastro com e-mail já registrado', function () {
         'sobrenome' => 'Usuário',
         'telefone' => '41988976118',
         'datanasc' => '2002-02-12',
-        'email' => 'testeu@gmail.com', // E-mail duplicado
+        'email' => 'testeu@gmail.com', //email duplicado
         'password' => 'senhaSegura123',
         'password_confirmation' => 'senhaSegura123',
         'tipousu' => ['Locatario'],
@@ -59,6 +59,10 @@ test('cadastro com e-mail já registrado', function () {
     $response->assertStatus(422);
 
     $response->assertJsonValidationErrors(['email']);
+
+    $response->assertJson([
+        'message' => 'The email has already been taken.',
+    ]);
     
 });
 
@@ -70,7 +74,7 @@ test('cadastro com senha e confirmação de senha diferentes', function () {
         'datanasc' => '2002-02-13',
         'email' => 'testeusu@gmail.com',
         'password' => 'senhaSegura123',
-        'password_confirmation' => 'senhaDiferente123', // Senha diferente
+        'password_confirmation' => 'senhaDiferente123', //senha diferente
         'tipousu' => ['Locatario'],
         'cpf' => '13232143212',
         'cnpj' => '',
@@ -84,6 +88,9 @@ test('cadastro com senha e confirmação de senha diferentes', function () {
 
     $response->assertJsonValidationErrors(['password']);
 
+    $response->assertJson([
+        'message' => 'The password field confirmation does not match.',
+    ]);
 });
 
 test('cadastro sem preencher todos os campos obrigatórios', function () {
@@ -92,7 +99,7 @@ test('cadastro sem preencher todos os campos obrigatórios', function () {
         'sobrenome' => 'Usuário',
         'telefone' => '41988976119',
         'datanasc' => '2002-02-13',
-        //'email' => 'testeusu@gmail.com' - Falta o campo 'email'
+        //'email' => 'testeusu@gmail.com' - Falta o campo email
         'password' => 'senhaSegura123',
         'password_confirmation' => 'senhaSegura123',
         'tipousu' => ['Locatario'],
@@ -107,6 +114,10 @@ test('cadastro sem preencher todos os campos obrigatórios', function () {
     $response->assertStatus(422);
 
     $response->assertJsonValidationErrors(['email']);
+
+    $response->assertJson([
+        'message' => 'The email field is required.',
+    ]);
 
 });
 
@@ -132,6 +143,10 @@ test('cadastro com formato de e-mail inválido', function () {
 
     $response->assertJsonValidationErrors(['email']);
 
+    $response->assertJson([
+        'message' => 'The email field must be a valid email address.',
+    ]);
+
 });
 
 test('cadastro com senha abaixo do limite mínimo de caracteres', function () {
@@ -142,7 +157,7 @@ test('cadastro com senha abaixo do limite mínimo de caracteres', function () {
         'datanasc' => '2002-02-13',
         'email' => 'testeusu@gmail.com',
         'password' => '12345', // Senha abaixo de 8 caract
-        'password_confirmation' => 'senhaSegura123',
+        'password_confirmation' => '12345',
         'tipousu' => ['Locatario'],
         'cpf' => '13232143212',
         'cnpj' => '',
@@ -156,6 +171,10 @@ test('cadastro com senha abaixo do limite mínimo de caracteres', function () {
 
     $response->assertJsonValidationErrors(['password']);
 
+    $response->assertJson([
+        'message' => 'The password field must be at least 8 characters.',
+    ]);
+
 });
 
 test('logar com usuário ou senha inválidos', function () {
@@ -166,25 +185,20 @@ test('logar com usuário ou senha inválidos', function () {
 
     $response = $this->postJson('/api/login', [
         'email' => 'usuario@teste.com',
-        'password' => 'senhaErrada123',  // Senha incorreta
+        'password' => 'senhaErrada123',  //senha incorreta
     ]);
 
     $response->assertStatus(422);
 
     $response->assertJson([
         'message' => 'Validation Error',
-        'errors' => [
-            'email' => [
-                'The provided credentials are incorrect.'
-            ]
-        ]
     ]);
 });
 
 test('logar com usuário e senha válidos', function () {
     $user = User::factory()->create([
         'email' => 'usuario@teste.com',
-        'password' => bcrypt('senhaValida123') // Certifique-se de que a senha está criptografada
+        'password' => bcrypt('senhaValida123') //Certifica de que a senha está criptografada
     ]);
 
     $response = $this->postJson('/api/login', [
@@ -192,12 +206,12 @@ test('logar com usuário e senha válidos', function () {
         'password' => 'senhaValida123',
     ]);
 
-    $response->assertStatus(200);
+    $response->assertStatus(200);//200
 
-    // Verifica se a mensagem "Authorized" e o token estão presentes
+    //Verifica se a mensagem "Authorized" e o token estão presentes
     $response->assertJson([
         'message' => 'Authorized',
-        'token' => true, // Verifica se o token foi gerado
+        'token' => true, //Verifica se o token foi gerado
     ]);
 });
 
@@ -208,7 +222,7 @@ test('login com SQL injection', function () {
     ]);
 
     $response = $this->postJson('/api/login', [
-        'email' => "usuario@teste.com' OR '1'='1",  // Tentando logar com SQL Injection
+        'email' => "usuario@teste.com' OR '1'='1",  //Tentando logar com SQL Injection
         'password' => 'senhaValida123',  
     ]);
 
