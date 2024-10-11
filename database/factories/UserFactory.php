@@ -39,6 +39,11 @@ class UserFactory extends Factory
         return $this->afterCreating(function (User $user) {
             // Escolher um tipo de usuário aleatório para associar
             $tipoUsuario = TypeUser::inRandomOrder()->first();
+        
+    // Se não houver tipo de usuário, crie um tipo de usuário padrão
+    if (!$tipoUsuario) {
+        $tipoUsuario = TypeUser::create(); // ou outro tipo qualquer
+    }
 
             // Associar o usuário ao tipo de usuário na tabela pivot
             $user->typeUsers()->attach($tipoUsuario->id);
