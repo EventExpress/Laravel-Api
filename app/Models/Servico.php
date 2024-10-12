@@ -18,15 +18,10 @@ class Servico extends Model
         'cidade',
         'bairro',
         'descricao',
-        'usuario_id',
+        'user_id',
         'valor',
         'agenda',
     ];
-
-    public function categoria()
-    {
-        return $this->belongsToMany(Categoria::class, 'servico_categoria', 'servico_id', 'categoria_id');
-    }
 
     public function user() {
         return $this->belongsTo(User::class);

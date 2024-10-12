@@ -24,24 +24,17 @@ class AnuncioFactory extends Factory
     public function definition(): array
     {
         $endereco = Endereco::factory()->create();
-        $usuario = User::factory()->create();
+        $user = User::factory()->create();
         //$categoria = Categoria::factory()->create();
 
         return [
             'titulo'=> $this->faker->sentence,
             'endereco_id'=>$endereco->id,
             'capacidade'=> $this->faker->numberBetween(1, 200),
-            'descricao'=> $this->faker->paragraph,
-            'usuario_id'=>$usuario->id,
+            'descricao' => $this->faker->text(30),
+            'user_id'=>$user->id,
             'valor'=> $this->faker->randomFloat(2, 10, 1000),
             'agenda' => $this->faker->dateTimeBetween('-80 years', '-18 years')->format('Y-m-d'),
         ];
-    }
-    public function configure()
-    {
-        return $this->afterCreating(function (Anuncio $anuncio) {
-            $categoria = Categoria::inRandomOrder()->first();
-           $anuncio->categoria()->attach($categoria->id);
-        });
     }
 }
