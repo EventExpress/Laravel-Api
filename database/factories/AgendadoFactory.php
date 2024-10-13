@@ -2,6 +2,8 @@
 
 namespace Database\Factories;
 
+use App\Models\TypeUser;
+use App\Models\User;
 use App\Models\Agendado;
 use App\Models\Anuncio;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -18,6 +20,8 @@ class AgendadoFactory extends Factory
      */
     public function definition(): array
     {   
+        $user = User::factory()->create();
+        TypeUser::create(['id' => $user->id, 'tipousu' => 'locatario']);
         $servico = Servico::factory()->create();
         $anuncio = Anuncio::factory()->create();
 

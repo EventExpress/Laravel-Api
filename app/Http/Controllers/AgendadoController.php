@@ -3,12 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
-use App\Models\Comprovante;
 use App\Models\Agendado;
 use App\Models\Servico;
 use App\Models\Anuncio;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class AgendadoController extends Controller
 {
@@ -16,7 +16,7 @@ class AgendadoController extends Controller
     {
         $agendados = Agendado::all();
 
-        //$agendados = Agendado::with(['user', 'anuncio', 'servico', 'comprovante'])->get();
+        //$agendados = Agendado::with(['user', 'anuncio', 'servico'])->get();
 
         return response()->json([
             'status' => true,
@@ -28,7 +28,7 @@ class AgendadoController extends Controller
     {
         $user = Auth::user();
 
-        if ($user->typeUsers->first()->tipousu !== 'locatário') {
+        if ($user->typeUsers->first()->tipousu !== 'locatario') {
             return response()->json([
                 'status' => false,
                 'error' => 'Você não tem permissão para reservar.'
@@ -48,15 +48,15 @@ class AgendadoController extends Controller
     {
         $user = Auth::user();
 
-        if ($user->typeUsers->first()->tipousu !== 'locatário') {
+        if ($user->typeUsers->first()->tipousu !== 'locatario') {
             return response()->json([
                 'status' => false,
                 'error' => 'Você não tem permissão para reservar.'
             ], 403);
         }
 
-        $anuncios = Anuncios::all();
-        $servicos = Servico::al();
+        $anuncios = Anuncio::all();
+        $servicos = Servico::all();
         return response()->json([
             'status' => true,
             'user' => $user,
@@ -66,65 +66,63 @@ class AgendadoController extends Controller
     }
 
     public function store(Request $request)
-    {
-        $validatedData = $request->validate([
-            'anuncio_id' => 'required|exists:anuncios,id',
-            'servico_id' => 'nullable|array',
-            'comprovante_id' => 'required|exists:comprovantes,id',
-            'formapagamento' => 'required|string|max:50',
-            'data_inicio' => 'required|date',
-            'data_fim' => 'required|date|after_or_equal:data_inicio',
-        ]);
-        
-        $dataInicio = $validatedData['data_inicio'];
-        $dataFim = $validatedData['data_fim'];
+{
+    $validatedData = $request->validate([
+        'anuncio_id' => 'required|exists:anuncios,id',
+        'servicoId' => 'nullable|array',
+        'formapagamento' => 'required|string|max:50',
+        'data_inicio' => 'required|date',
+        'data_fim' => 'required|date|after_or_equal:data_inicio',
+    ]);
 
-        // Verifica se há conflitos de data para o mesmo anúncio
-        $conflict = Agendado::where('anuncio_id', $validatedData['anuncio_id'])
-            ->where(function ($query) use ($dataInicio, $dataFim) {
-                $query->where('data_inicio', '<=', $dataFim)
-                  ->where('data_fim', '>=', $dataInicio);
+    $dataInicio = $validatedData['data_inicio'];
+    $dataFim = $validatedData['data_fim'];
+
+    $conflict = Agendado::where('anuncio_id', $validatedData['anuncio_id'])
+        ->where(function ($query) use ($dataInicio, $dataFim) {
+            $query->where('data_inicio', '<=', $dataFim)
+                ->where('data_fim', '>=', $dataInicio);
         })
         ->exists();
 
-        if ($conflict) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Este anúncio já está reservado para as datas selecionadas.',
-            ], 409);
-        }
+    if ($conflict) {
+        return response()->json([
+            'status' => false,
+            'message' => 'Este anúncio já está reservado para as datas selecionadas.',
+        ], 409);
+    }
 
-        $agendado = new Agendado();
-        $agendado->user_id = Auth::id();
-        $agendado->anuncio_id = $anuncio->id;
-        $agendado->comprovante_id = $comprovante->id;
-        $agendado->formapagamento = $validatedData['formapagamento'];
-        $agendado->data_inicio = $validatedData['dataInicio'];
-        $agendado->data_fim = $validatedData['$dataFim'];
-        $agendado->save();
+    $agendado = new Agendado();
+    $agendado->user_id = Auth::id();
+    $agendado->anuncio_id = $validatedData['anuncio_id'];
+    $agendado->formapagamento = $validatedData['formapagamento'];
+    $agendado->data_inicio = $validatedData['data_inicio'];
+    $agendado->data_fim = $validatedData['data_fim'];
+    $agendado->save();
 
-        if (!$agendado) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Erro ao reservar'
-            ], 500);
-        }
+    if (!$agendado) {
+        return response()->json([
+            'status' => false,
+            'message' => 'Erro ao reservar',
+        ], 500);
+    }
 
-        if ($request->has('servicoId') && is_array($request->servicoId)) {
-            $validServicoIds = array_filter($request->servicoId, function ($id) {
-                return !is_null($id) && is_numeric($id); // Verifica se os IDs são válidos
+    if ($request->has('servicoId') && is_array($request->servicoId)) {
+        $validServicoIds = array_filter($request->servicoId, function ($id) {
+            return !is_null($id) && is_numeric($id);
         });
 
         if (!empty($validServicoIds)) {
-            $agendado->servicos()->attach($validServicoIds); // Relaciona serviços com agendamento
+            $agendado->servicos()->attach($validServicoIds);
         }
+    }
 
-        return response()->json([
-            'status' => true,
-            'message' => 'Reserva criada com sucesso.',
-            'agendado' => $agendado,
-        ], 201);
-        }
+    return response()->json([
+        'status' => true,
+        'message' => 'Reserva criada com sucesso.',
+        'agendado' => $agendado,
+    ], 201);
+
     }
 
     public function show(Request $request)
@@ -156,7 +154,7 @@ class AgendadoController extends Controller
         $agendado = Agendado::find($id);
         $user = Auth::user();
 
-        if (!$agendado || $agendado->usuario_id != $user->id) {
+        if (!$agendado || $agendado->user_id != $user->id) {
             return response()->json([
                 'status' => false,
                 'error' => 'Reserva não encontrada ou você não tem permissão para edita-lo.'
@@ -176,6 +174,7 @@ class AgendadoController extends Controller
     public function update(Request $request, $id)
     {
         $validatedData = $request->validate([
+            'anuncio_id' => 'required|exists:anuncios,id',
             'data_inicio' => 'required|date',
             'data_fim' => 'required|date|after_or_equal:data_inicio',
             'servicoId' => 'required|array'
@@ -196,9 +195,10 @@ class AgendadoController extends Controller
 
         // Verifica se há conflitos de data para o mesmo anúncio
         $conflict = Agendado::where('anuncio_id', $validatedData['anuncio_id'])
+            ->where('id', '!=', $agendado->id) // Exclui a própria reserva do conflito
             ->where(function ($query) use ($dataInicio, $dataFim) {
                 $query->where('data_inicio', '<=', $dataFim)
-                  ->where('data_fim', '>=', $dataInicio);
+                    ->where('data_fim', '>=', $dataInicio);
         })
         ->exists();
 
@@ -214,6 +214,7 @@ class AgendadoController extends Controller
         $agendado->save();
 
         $agendado->update([
+            'anuncio_id' => $validatedData['anuncio_id'],
             'data_inicio' => $validatedData['data_inicio'],
             'data_fim' => $validatedData['data_fim'],
         ]);
@@ -240,7 +241,6 @@ class AgendadoController extends Controller
         }
 
         $agendado->delete();
-        $agendado->agendado()->delete();
 
         return response()->json([
             'status' => true,

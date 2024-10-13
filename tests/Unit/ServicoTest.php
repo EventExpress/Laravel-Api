@@ -14,7 +14,7 @@ test('cadastro de novo servico com todos os campos corretamente', function () {
 
     $user = User::factory()->create();
 
-    TypeUser::create(['user_id' => $user->id, 'tipousu' => 'locador']);
+    //TypeUser::create(['user_id' => $user->id, 'tipousu' => 'locador']);
 
     $this->actingAs($user);
     $response = $this->postJson('/api/servicos', [
@@ -34,9 +34,6 @@ test('cadastro de novo servico com todos os campos corretamente', function () {
 test('cadastro de novo servico com campo incorreto', function () {
 
     $user = User::factory()->create();
-
-    TypeUser::create(['user_id' => $user->id, 'tipousu' => 'locador']);
-
     $this->actingAs($user);
     $response = $this->postJson('/api/servicos', [
         'titulo' => '',//campo vazio
@@ -52,7 +49,6 @@ test('cadastro de novo servico com campo incorreto', function () {
 
 test('pesquisar todos os servicos oferecidos', function () {
     $user = User::factory()->create();
-    TypeUser::create(['user_id' => $user->id, 'tipousu' => 'prestador']);
     $this->actingAs($user);
 
     // Criar dois serviços para o prestador
@@ -68,7 +64,6 @@ test('pesquisar todos os servicos oferecidos', function () {
 
 test('pesquisar por servico especifico', function () {
     $user = User::factory()->create();
-    TypeUser::create(['user_id' => $user->id, 'tipousu' => 'prestador']);
     $this->actingAs($user);
 
     $results = Servico::factory()->create(['user_id' => $user->id, 'titulo' => 'Serviço de Limpeza']);
@@ -81,7 +76,6 @@ test('pesquisar por servico especifico', function () {
 
 test('pesquisar servico que nao existe', function () {
     $user = User::factory()->create();
-    TypeUser::create(['user_id' => $user->id, 'tipousu' => 'prestador']);
     $this->actingAs($user);
 
     $response = $this->getJson('/api/servicos?search=limpeza');
@@ -96,7 +90,6 @@ test('pesquisar servico que nao existe', function () {
 
 test('alterar servico com sucesso', function () {
     $user = User::factory()->create();
-    TypeUser::create(['user_id' => $user->id, 'tipousu' => 'prestador']);
     $this->actingAs($user);
 
     $servico = Servico::factory()->create([
@@ -126,7 +119,6 @@ test('alterar servico com sucesso', function () {
 
 test('alterar servico com campo vazio', function () {
     $user = User::factory()->create();
-    TypeUser::create(['user_id' => $user->id, 'tipousu' => 'prestador']);
     $this->actingAs($user);
 
     $servico = Servico::factory()->create([
@@ -154,7 +146,6 @@ test('alterar servico com campo vazio', function () {
 
 test('excluir servico com sucesso', function () {
     $user = User::factory()->create();
-    TypeUser::create(['user_id' => $user->id, 'tipousu' => 'prestador']);
     $this->actingAs($user);
 
     $servico = Servico::factory()->create(['user_id' => $user->id]);
@@ -168,7 +159,6 @@ test('excluir servico com sucesso', function () {
 
 test('tentar excluir servico inexistente', function () {
     $user = User::factory()->create();
-    TypeUser::create(['user_id' => $user->id, 'tipousu' => 'prestador']);
     $this->actingAs($user);
 
     $response = $this->deleteJson('/api/servicos{id}');

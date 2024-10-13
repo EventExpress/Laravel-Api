@@ -46,8 +46,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/agendados/create', [AgendadoController::class, 'create']);
     Route::post('/agendados', [AgendadoController::class, 'store']);
     Route::get('/agendados/{id}', [AgendadoController::class, 'show']);
-    Route::put('/agendadoos/{id}', [AgendadoController::class, 'update']);
-    Route::delete('/agendadoos/{id}', [AgendadoController::class, 'destroy']);
+    Route::put('/agendados/{id}', [AgendadoController::class, 'update']);
+    Route::delete('/agendados/{id}', [AgendadoController::class, 'destroy']);
 });
 
 // Rotas protegidas para administradores

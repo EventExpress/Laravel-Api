@@ -4,14 +4,15 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
+class CreateAgendadoServicoTable extends Migration
 {
     /**
      * Run the migrations.
      */
     public function up(): void
     {
-        Schema::create('agendado_adicional', function (Blueprint $table) {
+        Schema::create('agendado_servico', function (Blueprint $table) {
+            $table->id();
             $table->unsignedBigInteger('agendado_id');
             $table->unsignedBigInteger('servico_id');
             $table->foreign('agendado_id')->references('id')->on('agendados')->onDelete('cascade');
@@ -25,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        //
+        Schema::dropIfExists('agendado_servico');
     }
 };

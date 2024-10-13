@@ -28,11 +28,11 @@ class Servico extends Model
     }
 
     public function avaliacao() {
-        return $this->belongsToMany(Avaliacao::class, 'avaliacao_servico', 'servico_id', 'avaliacao_id');;
+        return $this->belongsToMany(Avaliacao::class, 'avaliacao_servico', 'avaliacao_id', 'servico_id');;
     }
 
     public function agendado()
     {
-        return $this->belongsToMany(Agendado::class, 'agendado_servico','servico_id','agendado_id');
+        return $this->belongsToMany(Agendado::class, 'agendado_servico','agendado_id','servico_id');
     }
 }

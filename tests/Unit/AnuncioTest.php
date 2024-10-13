@@ -15,10 +15,12 @@ uses(TestCase::class, RefreshDatabase::class);
 test('cadastro de novo anuncio com todos os campos corretamente', function () {
     $this->seed(CategoriaSeeder::class);
 
-    $user = User::factory()->create();
+    $categorias = Categoria::all();
+    if ($categorias->count() < 2) {
+        $this->fail('Categorias insuficientes após rodar o seeder.');
+    }
 
-    //associa tipo ao usuário
-    TypeUser::create(['user_id' => $user->id, 'tipousu' => 'locador']);
+    $user = User::factory()->create();
 
     //autentica o usuário
     $this->actingAs($user);
@@ -33,7 +35,7 @@ test('cadastro de novo anuncio com todos os campos corretamente', function () {
         'descricao' => 'Um local perfeito para festas de casamento.',
         'valor' => 2000,
         'agenda' => '2024-12-12',
-        'categoriaId' => [1, 2],
+        'categoriaId' => [$categorias[0]->id, $categorias[1]->id],
     ]);
 
     $response->assertStatus(201)
@@ -78,7 +80,7 @@ test('pesquisar anuncio com termos válidos', function () {
     $this->seed(CategoriaSeeder::class);
 
     $user = User::factory()->create();
-    TypeUser::create(['user_id' => $user->id, 'tipousu' => 'locador']);
+    //TypeUser::create(['user_id' => $user->id, 'tipousu' => 'locador']);
     $this->actingAs($user);
     
     $this->postJson('/api/anuncios', [
@@ -106,7 +108,6 @@ test('pesquisar anuncio com termos inválidos', function () {
     $this->seed(CategoriaSeeder::class);
 
     $user = User::factory()->create();
-    TypeUser::create(['user_id' => $user->id, 'tipousu' => 'locador']);
     $this->actingAs($user);
 
     $this->postJson('/api/anuncios', [
@@ -135,7 +136,6 @@ test('pesquisar todos os anuncios', function () {
     $this->seed(CategoriaSeeder::class);
 
     $user = User::factory()->create();
-    TypeUser::create(['user_id' => $user->id, 'tipousu' => 'locador']);
     $this->actingAs($user);
 
     $this->postJson('/api/anuncios', [
@@ -178,7 +178,6 @@ test('pesquisar por anuncio especifico', function () {
     $this->seed(CategoriaSeeder::class);
 
     $user = User::factory()->create();
-    TypeUser::create(['user_id' => $user->id, 'tipousu' => 'locador']);
     $this->actingAs($user);
 
     $this->postJson('/api/anuncios', [
@@ -220,7 +219,6 @@ test('pesquisar por anuncio inexistente', function () {
     $this->seed(CategoriaSeeder::class);
 
     $user = User::factory()->create();
-    TypeUser::create(['user_id' => $user->id, 'tipousu' => 'locador']);
     $this->actingAs($user);
 
     $this->postJson('/api/anuncios', [
@@ -269,7 +267,6 @@ test('alterar anuncio com sucesso', function () {
     }
 
     $user = User::factory()->create();
-    TypeUser::create(['user_id' => $user->id, 'tipousu' => 'locador']);
     Sanctum::actingAs($user); // Autentica o usuário com Sanctum
 
     $endereco = Endereco::factory()->create([
@@ -319,7 +316,6 @@ test('alterar anuncio sem sucesso', function () {
     }
 
     $user = User::factory()->create();
-    TypeUser::create(['user_id' => $user->id, 'tipousu' => 'locador']);
     Sanctum::actingAs($user); 
 
     $endereco = Endereco::factory()->create([
@@ -371,7 +367,6 @@ test('excluir anuncio com sucesso', function () {
     }
 
     $user = User::factory()->create();
-    TypeUser::create(['user_id' => $user->id, 'tipousu' => 'locador']);
     Sanctum::actingAs($user); 
 
     $endereco = Endereco::factory()->create([
@@ -409,7 +404,6 @@ test('excluir anuncio com sucesso', function () {
 
 test('tentar excluir anuncio inexistente', function () {
     $user = User::factory()->create();
-    TypeUser::create(['user_id' => $user->id, 'tipousu' => 'locador']);
     Sanctum::actingAs($user);
 
     $inexistenteId = 9999; // ID arbitrário que não corresponde a nenhum anúncio
