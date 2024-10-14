@@ -102,7 +102,7 @@ class AuthController extends Controller
                 ], 401);
             }
 
-            $user = $user->load(['nome', 'endereco', 'typeUsers']);
+            $user = $user->load(['endereco', 'typeUsers']);
 
             return response()->json([
                 'status' => true,

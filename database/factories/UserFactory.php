@@ -19,11 +19,11 @@ class UserFactory extends Factory
     public function definition(): array
     {
         $endereco = Endereco::factory()->create();
-        $nome = Nome::factory()->create();
         $password = 'xxx12345';
 
         return [
-            'nome_id' => $nome->id,
+            'nome' => $this->faker->firstName,
+            'sobrenome' => $this->faker->lastName,
             'telefone' => $this->faker->numerify('(##)####-####'),
             'email' => $this->faker->email,
             'password' => Hash::make($password),

@@ -8,6 +8,7 @@ use App\Models\User;
 use Laravel\Sanctum\Sanctum;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
+use Illuminate\Http\UploadedFile; 
 
 uses(TestCase::class, RefreshDatabase::class);
 
@@ -25,6 +26,15 @@ test('cadastro de novo anuncio com todos os campos corretamente', function () {
     //autentica o usuário
     $this->actingAs($user);
 
+
+    Storage::fake('public');
+
+    $imagens = [
+        UploadedFile::fake()->image('imagem1.jpg'),
+        UploadedFile::fake()->image('imagem2.jpg'),
+    ];
+
+
     $response = $this->postJson('/api/anuncios', [
         'titulo' => 'Festa de Casamento',
         'cidade' => 'Curitiba',
@@ -36,6 +46,8 @@ test('cadastro de novo anuncio com todos os campos corretamente', function () {
         'valor' => 2000,
         'agenda' => '2024-12-12',
         'categoriaId' => [$categorias[0]->id, $categorias[1]->id],
+        'imagens' => $imagens,
+        
     ]);
 
     $response->assertStatus(201)
@@ -46,12 +58,25 @@ test('cadastro de novo anuncio com todos os campos corretamente', function () {
 });
 
 
+
 test('preencher campos obrigatórios incorretamente', function () {
     $this->seed(CategoriaSeeder::class);
 
+    $categorias = Categoria::all();
+    if ($categorias->count() < 2) {
+        $this->fail('Categorias insuficientes após rodar o seeder.');
+    }
+
     $user = User::factory()->create();
-    TypeUser::create(['user_id' => $user->id, 'tipousu' => 'locador']);
+    //TypeUser::create(['user_id' => $user->id, 'tipousu' => 'locador']);
     $this->actingAs($user);
+
+    Storage::fake('public');
+
+    $imagens = [
+        UploadedFile::fake()->image('imagem1.jpg'),
+        UploadedFile::fake()->image('imagem2.jpg'),
+    ];
 
     $response = $this->postJson('/api/anuncios', [
         'titulo' => '', //campo vazio
@@ -63,7 +88,8 @@ test('preencher campos obrigatórios incorretamente', function () {
         'descricao' => 'Um local perfeito para festas de casamento.',
         'valor' => 2000,
         'agenda' => '2024-12-12',
-        'categoriaId' => [1, 2],
+        'categoriaId' =>[$categorias[0]->id, $categorias[1]->id],
+        'imagens' => $imagens
     ]);
 
     $response->assertStatus(422)
@@ -82,7 +108,13 @@ test('pesquisar anuncio com termos válidos', function () {
     $user = User::factory()->create();
     //TypeUser::create(['user_id' => $user->id, 'tipousu' => 'locador']);
     $this->actingAs($user);
-    
+    Storage::fake('public');
+
+    $imagens = [
+        UploadedFile::fake()->image('imagem1.jpg'),
+        UploadedFile::fake()->image('imagem2.jpg'),
+    ];
+
     $this->postJson('/api/anuncios', [
         'titulo' => 'Festa de Casamento',
         'cidade' => 'Curitiba',
@@ -94,6 +126,8 @@ test('pesquisar anuncio com termos válidos', function () {
         'valor' => 2000,
         'agenda' => '2024-12-12',
         'categoriaId' => [1, 2],
+        'imagens' => $imagens
+        
     ]);
 
     $response = $this->getJson('/api/anuncios?search=Festa');
@@ -110,6 +144,13 @@ test('pesquisar anuncio com termos inválidos', function () {
     $user = User::factory()->create();
     $this->actingAs($user);
 
+    Storage::fake('public');
+
+    $imagens = [
+        UploadedFile::fake()->image('imagem1.jpg'),
+        UploadedFile::fake()->image('imagem2.jpg'),
+    ];
+
     $this->postJson('/api/anuncios', [
         'titulo' => 'Festa de Casamento',
         'cidade' => 'Curitiba',
@@ -121,6 +162,7 @@ test('pesquisar anuncio com termos inválidos', function () {
         'valor' => 2000,
         'agenda' => '2024-12-12',
         'categoriaId' => [1, 2],
+        'imagens' => $imagens
     ]);
 
     $response = $this->getJson('/api/anuncios?search=Aniversario');
@@ -137,6 +179,12 @@ test('pesquisar todos os anuncios', function () {
 
     $user = User::factory()->create();
     $this->actingAs($user);
+    Storage::fake('public');
+
+    $imagens = [
+        UploadedFile::fake()->image('imagem1.jpg'),
+        UploadedFile::fake()->image('imagem2.jpg'),
+    ];
 
     $this->postJson('/api/anuncios', [
         'titulo' => 'Festa de Casamento',
@@ -149,6 +197,7 @@ test('pesquisar todos os anuncios', function () {
         'valor' => 2000,
         'agenda' => '2024-12-12',
         'categoriaId' => [1, 2],
+        'imagens' => $imagens
     ]);
 
     $this->postJson('/api/anuncios', [
@@ -162,6 +211,7 @@ test('pesquisar todos os anuncios', function () {
         'valor' => 3000,
         'agenda' => '2025-12-12',
         'categoriaId' => [1,2],
+        'imagens' => $imagens
     ]);
 
     $response = $this->getJson('/api/anuncios');
@@ -180,6 +230,13 @@ test('pesquisar por anuncio especifico', function () {
     $user = User::factory()->create();
     $this->actingAs($user);
 
+    Storage::fake('public');
+
+    $imagens = [
+        UploadedFile::fake()->image('imagem1.jpg'),
+        UploadedFile::fake()->image('imagem2.jpg'),
+    ];
+
     $this->postJson('/api/anuncios', [
         'titulo' => 'Festa de Casamento',
         'cidade' => 'Curitiba',
@@ -191,6 +248,7 @@ test('pesquisar por anuncio especifico', function () {
         'valor' => 2000,
         'agenda' => '2024-12-12',
         'categoriaId' => [1, 2],
+        'imagens' => $imagens
     ]);
 
     $this->postJson('/api/anuncios', [
@@ -204,6 +262,7 @@ test('pesquisar por anuncio especifico', function () {
         'valor' => 3000,
         'agenda' => '2025-12-12',
         'categoriaId' => [1,2],
+        'imagens' => $imagens
     ]);
 
     $response = $this->getJson('/api/anuncios?search=Casamento');
@@ -221,6 +280,13 @@ test('pesquisar por anuncio inexistente', function () {
     $user = User::factory()->create();
     $this->actingAs($user);
 
+
+    Storage::fake('public');
+    $imagens = [
+        UploadedFile::fake()->image('imagem1.jpg'),
+        UploadedFile::fake()->image('imagem2.jpg'),
+    ];
+
     $this->postJson('/api/anuncios', [
         'titulo' => 'Festa de Casamento',
         'cidade' => 'Curitiba',
@@ -232,6 +298,7 @@ test('pesquisar por anuncio inexistente', function () {
         'valor' => 2000,
         'agenda' => '2024-12-12',
         'categoriaId' => [1, 2],
+        'imagens' => $imagens
     ]);
 
     $this->postJson('/api/anuncios', [
@@ -245,6 +312,7 @@ test('pesquisar por anuncio inexistente', function () {
         'valor' => 3000,
         'agenda' => '2025-12-12',
         'categoriaId' => [1,2],
+        'imagens' => $imagens
     ]);
 
     $response = $this->getJson('/api/anuncios?search=infantil');
@@ -317,6 +385,13 @@ test('alterar anuncio sem sucesso', function () {
 
     $user = User::factory()->create();
     Sanctum::actingAs($user); 
+    
+    Storage::fake('public');
+
+    $imagens = [
+        UploadedFile::fake()->image('imagem1.jpg'),
+        UploadedFile::fake()->image('imagem2.jpg'),
+    ];
 
     $endereco = Endereco::factory()->create([
         'cidade' => 'Curitiba',
@@ -333,6 +408,7 @@ test('alterar anuncio sem sucesso', function () {
         'descricao' => 'Local ideal para festas de aniversário.',
         'valor' => 1500,
         'agenda' => '2024-11-10',
+        'imagens' => $imagens
     ]);
 
     $response = $this->putJson("/api/anuncios/{$anuncio->id}", [
@@ -346,6 +422,7 @@ test('alterar anuncio sem sucesso', function () {
         'valor' => 2000,
         'agenda' => '2024-12-12',
         'categoriaId' => [$categorias[0]->id, $categorias[1]->id],
+        'imagens' => $imagens
     ]);
 
    $response->assertStatus(422);

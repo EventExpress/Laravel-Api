@@ -5,8 +5,11 @@ namespace App\Http\Controllers;
 use App\Models\Anuncio;
 use App\Models\Categoria;
 use App\Models\Endereco;
+use App\Models\ImagemAnuncio;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class AnuncioController extends Controller
 {
@@ -80,61 +83,76 @@ class AnuncioController extends Controller
      */
     public function store(Request $request)
     {
-        $validatedData = $request->validate([
-            'titulo' => 'required|string|min:4|max:255',
-            'cidade' => 'required|string|min:3|max:255',
-            'cep' => 'required|string|min:8|max:9',
-            'numero' => 'required|integer|min:1',
-            'bairro' => 'required|string|min:3|max:255',
-            'capacidade' => 'required|integer|min:1|max:10000',
-            'descricao' => 'required|string|min:10|max:2000',
-            'valor' => 'required|numeric|min:0',
-            'agenda' => 'required|date',
-            'categoriaId' => 'required|array',
-        ]);
+        //
+        DB::beginTransaction();
 
-        // Cria o novo endereço
-        $endereco = new Endereco();
-        $endereco->cidade = $validatedData['cidade'];
-        $endereco->cep = $validatedData['cep'];
-        $endereco->numero = $validatedData['numero'];
-        $endereco->bairro = $validatedData['bairro'];
-        $endereco->save();
+        try {
+            $validatedData = $request->validate([
+                'titulo' => 'required|string|min:4|max:255',
+                'cidade' => 'required|string|min:3|max:255',
+                'cep' => 'required|string|min:8|max:9',
+                'numero' => 'required|integer|min:1',
+                'bairro' => 'required|string|min:3|max:255',
+                'capacidade' => 'required|integer|min:1|max:10000',
+                'descricao' => 'required|string|min:10|max:2000',
+                'valor' => 'required|numeric|min:0',
+                'agenda' => 'required|date',
+                'categoriaId' => 'required|array',
+                'imagens' => 'required|array',
+                'imagens.*' => 'image|mimes:jpg,jpeg,png|max:2048', // Validação para cada imagem
+            ]);
 
-        if (!$endereco) {
+            $endereco = new Endereco();
+            $endereco->cidade = $validatedData['cidade'];
+            $endereco->cep = $validatedData['cep'];
+            $endereco->numero = $validatedData['numero'];
+            $endereco->bairro = $validatedData['bairro'];
+            $endereco->save();
+
+            $anuncio = new Anuncio();
+            $anuncio->user_id = Auth::id();
+            $anuncio->endereco_id = $endereco->id;
+            $anuncio->titulo = $validatedData['titulo'];
+            $anuncio->capacidade = $validatedData['capacidade'];
+            $anuncio->descricao = $validatedData['descricao'];
+            $anuncio->valor = $validatedData['valor'];
+            $anuncio->agenda = $validatedData['agenda'];
+            $anuncio->save();
+
+            foreach ($validatedData['imagens'] as $imagem) {
+                // Armazena a imagem e obtém o caminho
+                $imagePath = $imagem->store('imagens/anuncios');
+
+                $imagemAnuncio = new ImagemAnuncio();
+                $imagemAnuncio->anuncio_id = $anuncio->id;
+                $imagemAnuncio->image_path = $imagePath;
+                $imagemAnuncio->is_main = false;
+                $imagemAnuncio->save();
+            }
+
+            // Anexar categorias ao anúncio
+            $anuncio->categorias()->attach($validatedData['categoriaId']);
+
+            DB::commit();
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Anúncio criado com sucesso.',
+                'anuncio' => $anuncio,
+            ], 201);
+
+        }catch (\Exception $e) {
+            Log::error('Erro ao criar anúncio: ' . $e->getMessage());
+            return response()->json(['message' => 'Erro ao criar o anúncio.'], 500);
+        } 
+        catch (\Exception $e) {
+            DB::rollBack(); // Rollback em caso de erro
             return response()->json([
                 'status' => false,
-                'message' => 'Erro ao salvar endereço'
+                'message' => 'Erro ao criar anúncio: ' . $e->getMessage()
             ], 500);
         }
-
-        $anuncio = new Anuncio();
-        $anuncio->user_id = Auth::id();  // Ajuste de 'usuario_id' para 'user_id'
-        $anuncio->endereco_id = $endereco->id;
-        $anuncio->titulo = $validatedData['titulo'];
-        $anuncio->capacidade = $validatedData['capacidade'];
-        $anuncio->descricao = $validatedData['descricao'];
-        $anuncio->valor = $validatedData['valor'];
-        $anuncio->agenda = $validatedData['agenda'];
-        $anuncio->save();
-
-        if (!$anuncio) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Erro ao criar anúncio'
-            ], 500);
-        }
-
-        // Anexar categorias ao anúncio
-        $anuncio->categorias()->attach($validatedData['categoriaId']);
-
-        return response()->json([
-            'status' => true,
-            'message' => 'Anúncio criado com sucesso.',
-            'anuncio' => $anuncio,
-        ], 201);
     }
-
     /**
      * Display the specified resource.
      */
@@ -196,48 +214,78 @@ class AnuncioController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $validatedData = $request->validate([
-            'titulo' => 'required|string|min:4|max:255',
-            'cidade' => 'required|string|min:3|max:255',
-            'cep' => 'required|string|min:8|max:9',
-            'numero' => 'required|integer|min:1',
-            'bairro' => 'required|string|min:3|max:255',
-            'capacidade' => 'required|integer|min:1|max:10000',
-            'descricao' => 'required|string|min:10|max:2000',
-            'categoriaId' => 'required|array'
-        ]);
+        DB::beginTransaction();
 
-        $user = Auth::user();
-        $anuncio = Anuncio::find($id);
+        try {
+            $validatedData = $request->validate([
+                'titulo' => 'required|string|min:4|max:255',
+                'cidade' => 'required|string|min:3|max:255',
+                'cep' => 'required|string|min:8|max:9',
+                'numero' => 'required|integer|min:1',
+                'bairro' => 'required|string|min:3|max:255',
+                'capacidade' => 'required|integer|min:1|max:10000',
+                'descricao' => 'required|string|min:10|max:2000',
+                'categoriaId' => 'required|array',
+                'imagens' => 'nullable|array',
+                'imagens.*' => 'image|mimes:jpg,jpeg,png|max:2048',
+            ]);
 
-        if (!$anuncio || $anuncio->user_id != $user->id) {
+            $user = Auth::user();
+            $anuncio = Anuncio::find($id);
+
+            if (!$anuncio || $anuncio->user_id != $user->id) {
+                return response()->json([
+                    'status' => false,
+                    'error' => 'Anúncio não encontrado ou você não tem permissão para editá-lo.'
+                ], 403);
+            }
+
+            $anuncio->update([
+                'titulo' => $validatedData['titulo'],
+                'capacidade' => $validatedData['capacidade'],
+                'descricao' => $validatedData['descricao'],
+            ]);
+
+            $endereco = Endereco::find($anuncio->endereco_id);
+            $endereco->update([
+                'cidade' => $validatedData['cidade'],
+                'cep' => $validatedData['cep'],
+                'numero' => $validatedData['numero'],
+                'bairro' => $validatedData['bairro'],
+            ]);
+
+
+            if (isset($validatedData['imagens'])) {
+                foreach ($validatedData['imagens'] as $imagem) {
+                    // Armazena a nova imagem e obtém o caminho
+                    $imagePath = $imagem->store('imagens/anuncios');
+
+                    $imagemAnuncio = new ImagemAnuncio();
+                    $imagemAnuncio->anuncio_id = $anuncio->id;
+                    $imagemAnuncio->image_path = $imagePath;
+                    $imagemAnuncio->is_main = false;
+                    $imagemAnuncio->save();
+                }
+            }
+
+
+            $anuncio->categorias()->sync($validatedData['categoriaId']);
+
+            DB::commit();
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Anúncio atualizado com sucesso.',
+                'anuncio' => $anuncio,
+            ], 200);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
             return response()->json([
                 'status' => false,
-                'error' => 'Anúncio não encontrado ou você não tem permissão para editá-lo.'
-            ], 403);
+                'message' => 'Erro ao atualizar anúncio: ' . $e->getMessage()
+            ], 500);
         }
-
-        $anuncio->update([
-            'titulo' => $validatedData['titulo'],
-            'capacidade' => $validatedData['capacidade'],
-            'descricao' => $validatedData['descricao'],
-        ]);
-
-        $anuncio->categorias()->sync($validatedData['categoriaId']);
-
-        $endereco = Endereco::find($anuncio->endereco_id);
-        $endereco->update([
-            'cidade' => $validatedData['cidade'],
-            'cep' => $validatedData['cep'],
-            'numero' => $validatedData['numero'],
-            'bairro' => $validatedData['bairro'],
-        ]);
-
-        return response()->json([
-            'status' => true,
-            'message' => 'Anúncio atualizado com sucesso.',
-            'anuncio' => $anuncio,
-        ], 200);
     }
 
     /**
