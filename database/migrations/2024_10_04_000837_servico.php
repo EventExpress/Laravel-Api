@@ -21,8 +21,6 @@ return new class extends Migration
             $table->string('cidade', 50);
             $table->string('bairro', 50);
             $table->date('agenda');
-            $table->string('cidade', 50);
-            $table->string('bairro', 50);
             $table->timestamps();
         });
     }

@@ -27,9 +27,11 @@ class Servico extends Model
         return $this->belongsTo(User::class);
     }
 
-    public function avaliacao() {
-        return $this->belongsToMany(Avaliacao::class, 'avaliacao_servico', 'avaliacao_id', 'servico_id');;
+    public function avaliacoes()
+    {
+        return $this->morphMany(Avaliacao::class, 'avaliavel');
     }
+
 
     public function agendado()
     {

@@ -35,9 +35,11 @@ class Anuncio extends Model
         return $this->belongsTo(User::class);
     }
 
-    public function avaliacoes() {
-        return $this->belongsToMany(Avaliacao::class, 'avaliacao_anuncio', 'anuncio_id', 'avaliacao_id'); // Ajuste para relacionamento muitos para muitos
+    public function avaliacoes()
+    {
+        return $this->morphMany(Avaliacao::class, 'avaliavel');
     }
+
 
     public function imagens()
     {

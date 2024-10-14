@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\Avaliacao;
 use App\Models\Categoria;
 use App\Models\Anuncio;
 use App\Models\ImagemAnuncio;
@@ -16,11 +17,6 @@ class AnuncioFactory extends Factory
 {
     protected $model = Anuncio::class;
 
-    /**
-     * Define the model's default state.
-     *
-     * @return array<string, mixed>
-     */
     public function definition(): array
     {
         $endereco = Endereco::factory()->create();
@@ -37,9 +33,6 @@ class AnuncioFactory extends Factory
         ];
     }
 
-    /**
-     * Configurações adicionais após a criação.
-     */
     public function configure()
     {
         return $this->afterCreating(function (Anuncio $anuncio) {
@@ -52,6 +45,15 @@ class AnuncioFactory extends Factory
                 'image_path' => $this->faker->imageUrl(640, 480, 'business'),
                 'is_main' => true,
             ]);
+
+            $usuarioId = User::inRandomOrder()->first()->id; // Obtém um usuário aleatório
+
+            // Cria uma avaliação associada a esse usuário
+            $avaliacao = Avaliacao::factory()->make(); // Cria uma avaliação
+            $avaliacao->avaliavel_type = Anuncio::class; // Define o tipo polimórfico
+            $avaliacao->avaliavel_id = $anuncio->id; // Associa à ID do anúncio
+            $avaliacao->user_id = $usuarioId; // Associa o ID do usuário que fez a avaliação
+            $avaliacao->save(); // Salva a avaliação
         });
     }
 }

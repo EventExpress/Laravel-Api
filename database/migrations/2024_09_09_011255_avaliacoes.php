@@ -13,12 +13,11 @@ return new class extends Migration
     {
         Schema::create('avaliacoes', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('user_id');
-            $table->enum('nota', ['1', '2', '3', '4', '5']);
-            $table->string('comentario')->nullable();
+            $table->morphs('avaliavel'); // Cria as colunas 'avaliavel_type' e 'avaliavel_id'
+            $table->foreignId('user_id')->constrained()->onDelete('cascade'); // Definir a chave estrangeira para a tabela de usuários
+            $table->integer('nota'); // Por exemplo, uma nota de 1 a 5
+            $table->text('comentario')->nullable(); // Comentário opcional
             $table->timestamps();
-
-            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
         });
     }
 
