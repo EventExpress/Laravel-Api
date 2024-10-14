@@ -10,7 +10,7 @@ use Laravel\Sanctum\HasApiTokens;
 
 class ImagemAnuncio extends Model
 {
-    use HasApiTokens, HasFactory, Notifiable, SoftDeletes;
+    use HasApiTokens, HasFactory, Notifiable;
 
     protected $fillable = [
         'anuncio_id',

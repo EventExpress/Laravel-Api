@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\ImagemAnuncio;
 use App\Models\Endereco;
 use App\Models\Anuncio;
 use App\Models\Categoria;
@@ -27,11 +28,10 @@ test('cadastro de novo anuncio com todos os campos corretamente', function () {
     $this->actingAs($user);
 
 
-    Storage::fake('public');
-
+    // Simular imagens em Base64
     $imagens = [
-        UploadedFile::fake()->image('imagem1.jpg'),
-        UploadedFile::fake()->image('imagem2.jpg'),
+        base64_encode(UploadedFile::fake()->image('imagem1.jpg')->getContent()),
+        base64_encode(UploadedFile::fake()->image('imagem2.jpg')->getContent()),
     ];
 
 
@@ -71,11 +71,9 @@ test('preencher campos obrigatórios incorretamente', function () {
     //TypeUser::create(['user_id' => $user->id, 'tipousu' => 'locador']);
     $this->actingAs($user);
 
-    Storage::fake('public');
-
     $imagens = [
-        UploadedFile::fake()->image('imagem1.jpg'),
-        UploadedFile::fake()->image('imagem2.jpg'),
+        base64_encode(UploadedFile::fake()->image('imagem1.jpg')->getContent()),
+        base64_encode(UploadedFile::fake()->image('imagem2.jpg')->getContent()),
     ];
 
     $response = $this->postJson('/api/anuncios', [
@@ -105,17 +103,20 @@ test('preencher campos obrigatórios incorretamente', function () {
 test('pesquisar anuncio com termos válidos', function () {
     $this->seed(CategoriaSeeder::class);
 
+    $categorias = Categoria::all();
+    if ($categorias->count() < 2) {
+        $this->fail('Categorias insuficientes após rodar o seeder.');
+    }
+
     $user = User::factory()->create();
-    //TypeUser::create(['user_id' => $user->id, 'tipousu' => 'locador']);
     $this->actingAs($user);
-    Storage::fake('public');
 
     $imagens = [
-        UploadedFile::fake()->image('imagem1.jpg'),
-        UploadedFile::fake()->image('imagem2.jpg'),
+        base64_encode(UploadedFile::fake()->image('imagem1.jpg')->getContent()),
+        base64_encode(UploadedFile::fake()->image('imagem2.jpg')->getContent()),
     ];
 
-    $this->postJson('/api/anuncios', [
+    $response = $this->postJson('/api/anuncios', [
         'titulo' => 'Festa de Casamento',
         'cidade' => 'Curitiba',
         'cep' => '12345-678',
@@ -125,14 +126,19 @@ test('pesquisar anuncio com termos válidos', function () {
         'descricao' => 'Um local perfeito para festas de casamento.',
         'valor' => 2000,
         'agenda' => '2024-12-12',
-        'categoriaId' => [1, 2],
+        'categoriaId' => [$categorias[0]->id, $categorias[1]->id],
         'imagens' => $imagens
-        
     ]);
 
-    $response = $this->getJson('/api/anuncios?search=Festa');
+    $response->assertStatus(201)
+             ->assertJson([
+                 'status' => true,
+                 'message' => 'Anúncio criado com sucesso.',
+             ]);
 
+    $response = $this->getJson('/api/anuncios?search=Festa');
     $response->assertStatus(200)
+             ->assertJson(['status' => true])
              ->assertJsonFragment(['titulo' => 'Festa de Casamento']);
 });
 
@@ -141,14 +147,17 @@ test('pesquisar anuncio com termos válidos', function () {
 test('pesquisar anuncio com termos inválidos', function () {
     $this->seed(CategoriaSeeder::class);
 
+    $categorias = Categoria::all();
+    if ($categorias->count() < 2) {
+        $this->fail('Categorias insuficientes após rodar o seeder.');
+    }
+
     $user = User::factory()->create();
     $this->actingAs($user);
 
-    Storage::fake('public');
-
     $imagens = [
-        UploadedFile::fake()->image('imagem1.jpg'),
-        UploadedFile::fake()->image('imagem2.jpg'),
+        base64_encode(UploadedFile::fake()->image('imagem1.jpg')->getContent()),
+        base64_encode(UploadedFile::fake()->image('imagem2.jpg')->getContent()),
     ];
 
     $this->postJson('/api/anuncios', [
@@ -177,13 +186,17 @@ test('pesquisar anuncio com termos inválidos', function () {
 test('pesquisar todos os anuncios', function () {
     $this->seed(CategoriaSeeder::class);
 
+    $categorias = Categoria::all();
+    if ($categorias->count() < 2) {
+        $this->fail('Categorias insuficientes após rodar o seeder.');
+    }
+
     $user = User::factory()->create();
     $this->actingAs($user);
-    Storage::fake('public');
-
+    
     $imagens = [
-        UploadedFile::fake()->image('imagem1.jpg'),
-        UploadedFile::fake()->image('imagem2.jpg'),
+        base64_encode(UploadedFile::fake()->image('imagem1.jpg')->getContent()),
+        base64_encode(UploadedFile::fake()->image('imagem2.jpg')->getContent()),
     ];
 
     $this->postJson('/api/anuncios', [
@@ -196,7 +209,7 @@ test('pesquisar todos os anuncios', function () {
         'descricao' => 'Um local perfeito para festas de casamento.',
         'valor' => 2000,
         'agenda' => '2024-12-12',
-        'categoriaId' => [1, 2],
+        'categoriaId' => [$categorias[0]->id, $categorias[1]->id],
         'imagens' => $imagens
     ]);
 
@@ -210,7 +223,7 @@ test('pesquisar todos os anuncios', function () {
         'descricao' => 'Um local perfeito para festas de aniversário.',
         'valor' => 3000,
         'agenda' => '2025-12-12',
-        'categoriaId' => [1,2],
+        'categoriaId' => [$categorias[0]->id, $categorias[1]->id],
         'imagens' => $imagens
     ]);
 
@@ -227,14 +240,17 @@ test('pesquisar todos os anuncios', function () {
 test('pesquisar por anuncio especifico', function () {
     $this->seed(CategoriaSeeder::class);
 
+    $categorias = Categoria::all();
+    if ($categorias->count() < 2) {
+        $this->fail('Categorias insuficientes após rodar o seeder.');
+    }
+
     $user = User::factory()->create();
     $this->actingAs($user);
 
-    Storage::fake('public');
-
     $imagens = [
-        UploadedFile::fake()->image('imagem1.jpg'),
-        UploadedFile::fake()->image('imagem2.jpg'),
+        base64_encode(UploadedFile::fake()->image('imagem1.jpg')->getContent()),
+        base64_encode(UploadedFile::fake()->image('imagem2.jpg')->getContent()),
     ];
 
     $this->postJson('/api/anuncios', [
@@ -247,7 +263,7 @@ test('pesquisar por anuncio especifico', function () {
         'descricao' => 'Um local perfeito para festas de casamento.',
         'valor' => 2000,
         'agenda' => '2024-12-12',
-        'categoriaId' => [1, 2],
+        'categoriaId' => [$categorias[0]->id, $categorias[1]->id],
         'imagens' => $imagens
     ]);
 
@@ -261,7 +277,7 @@ test('pesquisar por anuncio especifico', function () {
         'descricao' => 'Um local perfeito para festas de aniversário.',
         'valor' => 3000,
         'agenda' => '2025-12-12',
-        'categoriaId' => [1,2],
+        'categoriaId' => [$categorias[0]->id, $categorias[1]->id],
         'imagens' => $imagens
     ]);
 
@@ -277,14 +293,18 @@ test('pesquisar por anuncio especifico', function () {
 test('pesquisar por anuncio inexistente', function () {
     $this->seed(CategoriaSeeder::class);
 
+    $categorias = Categoria::all();
+    if ($categorias->count() < 2) {
+        $this->fail('Categorias insuficientes após rodar o seeder.');
+    }
+
     $user = User::factory()->create();
     $this->actingAs($user);
 
 
-    Storage::fake('public');
     $imagens = [
-        UploadedFile::fake()->image('imagem1.jpg'),
-        UploadedFile::fake()->image('imagem2.jpg'),
+        base64_encode(UploadedFile::fake()->image('imagem1.jpg')->getContent()),
+        base64_encode(UploadedFile::fake()->image('imagem2.jpg')->getContent()),
     ];
 
     $this->postJson('/api/anuncios', [
@@ -297,7 +317,7 @@ test('pesquisar por anuncio inexistente', function () {
         'descricao' => 'Um local perfeito para festas de casamento.',
         'valor' => 2000,
         'agenda' => '2024-12-12',
-        'categoriaId' => [1, 2],
+        'categoriaId' => [$categorias[0]->id, $categorias[1]->id],
         'imagens' => $imagens
     ]);
 
@@ -323,7 +343,6 @@ test('pesquisar por anuncio inexistente', function () {
             'anuncios' => [],
         ]);
 });
-
 
 
 test('alterar anuncio com sucesso', function () {
@@ -386,11 +405,9 @@ test('alterar anuncio sem sucesso', function () {
     $user = User::factory()->create();
     Sanctum::actingAs($user); 
     
-    Storage::fake('public');
-
     $imagens = [
-        UploadedFile::fake()->image('imagem1.jpg'),
-        UploadedFile::fake()->image('imagem2.jpg'),
+        base64_encode(UploadedFile::fake()->image('imagem1.jpg')->getContent()),
+        base64_encode(UploadedFile::fake()->image('imagem2.jpg')->getContent()),
     ];
 
     $endereco = Endereco::factory()->create([
@@ -408,8 +425,17 @@ test('alterar anuncio sem sucesso', function () {
         'descricao' => 'Local ideal para festas de aniversário.',
         'valor' => 1500,
         'agenda' => '2024-11-10',
-        'imagens' => $imagens
     ]);
+
+    // Salvar as imagens separadamente
+    foreach ($imagens as $imagemBase64) {
+        ImagemAnuncio::create([
+            'anuncio_id' => $anuncio->id,
+            'image_path' => $imagemBase64,
+            'is_main' => false,
+    ]);
+    }
+
 
     $response = $this->putJson("/api/anuncios/{$anuncio->id}", [
         'titulo' => '',//campo vazio
@@ -430,7 +456,7 @@ test('alterar anuncio sem sucesso', function () {
    $response->assertJsonValidationErrors(['titulo']);
 
    $response->assertJson([
-       'message' => 'The titulo field is required.',
+       'message' => 'Erro de validação.',
        ]);
 });
 
@@ -471,7 +497,7 @@ test('excluir anuncio com sucesso', function () {
                  'message' => 'Anúncio excluído com sucesso.',
              ]);
 
-    // Verifica se o anúncio foi realmente excluído do banco de dados
+    
     $this->assertDatabaseMissing('anuncios', [
         'id' => $anuncio->id,
         'titulo' => 'Festa de Aniversário',
@@ -493,3 +519,4 @@ test('tentar excluir anuncio inexistente', function () {
                 'error' => 'Anúncio não encontrado ou você não tem permissão para excluí-lo.',
              ]);
 });
+

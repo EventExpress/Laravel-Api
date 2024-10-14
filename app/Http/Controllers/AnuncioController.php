@@ -10,6 +10,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
+
 
 class AnuncioController extends Controller
 {
@@ -18,13 +20,15 @@ class AnuncioController extends Controller
      */
     public function index()
     {
-        $anuncios = Anuncio::all();
+        $anuncios = Anuncio::with('imagens')->get();
 
         return response()->json([
             'status' => true,
             'anuncios' => $anuncios,
-        ], 200);
+        ]);
     }
+
+
 
     public function indexNoAuth()
     {
@@ -99,7 +103,7 @@ class AnuncioController extends Controller
                 'agenda' => 'required|date',
                 'categoriaId' => 'required|array',
                 'imagens' => 'required|array',
-                'imagens.*' => 'image|mimes:jpg,jpeg,png|max:2048', // Validação para cada imagem
+                'imagens.*' => 'string', // para aceitar string Base64
             ]);
 
             $endereco = new Endereco();
@@ -119,18 +123,14 @@ class AnuncioController extends Controller
             $anuncio->agenda = $validatedData['agenda'];
             $anuncio->save();
 
-            foreach ($validatedData['imagens'] as $imagem) {
-                // Armazena a imagem e obtém o caminho
-                $imagePath = $imagem->store('imagens/anuncios');
-
+            foreach ($validatedData['imagens'] as $imagemBase64) {
                 $imagemAnuncio = new ImagemAnuncio();
                 $imagemAnuncio->anuncio_id = $anuncio->id;
-                $imagemAnuncio->image_path = $imagePath;
-                $imagemAnuncio->is_main = false;
+                $imagemAnuncio->image_path = $imagemBase64; // armazena a string Base64 diretamente
+                $imagemAnuncio->is_main = false; // define se é a imagem principal
                 $imagemAnuncio->save();
             }
 
-            // Anexar categorias ao anúncio
             $anuncio->categorias()->attach($validatedData['categoriaId']);
 
             DB::commit();
@@ -141,18 +141,23 @@ class AnuncioController extends Controller
                 'anuncio' => $anuncio,
             ], 201);
 
+        }catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Erro de validação.',
+                'errors' => $e->errors(),
+            ], 422);
+
         }catch (\Exception $e) {
-            Log::error('Erro ao criar anúncio: ' . $e->getMessage());
-            return response()->json(['message' => 'Erro ao criar o anúncio.'], 500);
-        } 
-        catch (\Exception $e) {
             DB::rollBack(); // Rollback em caso de erro
+
             return response()->json([
                 'status' => false,
                 'message' => 'Erro ao criar anúncio: ' . $e->getMessage()
             ], 500);
         }
     }
+
     /**
      * Display the specified resource.
      */
@@ -279,6 +284,13 @@ class AnuncioController extends Controller
                 'anuncio' => $anuncio,
             ], 200);
 
+        }catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Erro de validação.',
+                'errors' => $e->errors(),
+            ], 422);
+            
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([

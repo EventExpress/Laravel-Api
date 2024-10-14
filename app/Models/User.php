@@ -69,8 +69,9 @@ class User extends Authenticatable
         return $this->belongsToMany(TypeUser::class, 'tipo_usuario', 'user_id', 'typeusers_id');
     }
 
-    public function avaliacao()
+    public function avaliacoes()
     {
-        return $this->belongsToMany(User::class, 'avaliacao_users', 'users_id', 'avaliacao_id');
+        return $this->morphMany(Avaliacao::class, 'avaliavel');
     }
+
 }

@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\Servico;
 use App\Models\TypeUser;
 use App\Models\User;
 use App\Models\Agendado;
@@ -19,7 +20,7 @@ class AgendadoFactory extends Factory
      * @return array<string, mixed>
      */
     public function definition(): array
-    {   
+    {
         $user = User::factory()->create();
         TypeUser::create(['id' => $user->id, 'tipousu' => 'locatario']);
         $servico = Servico::factory()->create();
