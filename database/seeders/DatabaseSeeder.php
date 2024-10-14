@@ -18,10 +18,10 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         DB::beginTransaction();
-        //caso seja feito em ordem errada a criação dos outros seeders ele nao cria de forma erroneea e apresenta o erro
+        //caso seja feito em ordem errada a criação dos outros seeders ele nao cria de forma erronea e apresenta o erro
 
         try {
-            User::factory()->create();
+            Anuncio::factory()->create();
 
             DB::commit();
         } catch (\Exception $e) {

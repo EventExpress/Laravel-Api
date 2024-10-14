@@ -3,7 +3,6 @@
 namespace Database\Factories;
 
 use App\Models\Endereco;
-use App\Models\Nome;
 use App\Models\User;
 use App\Models\TypeUser;
 use Illuminate\Database\Eloquent\Factories\Factory;
