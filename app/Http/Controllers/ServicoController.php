@@ -4,12 +4,22 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Models\Servico;
-use App\Models\Categoria;
+use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class ServicoController extends Controller
-{
+{   
+    public function index()
+    {
+        $servicos = Servico::all();
 
+        return response()->json([
+            'status' => true,
+            'servicos' => $servicos,
+        ], 200);
+    }
+    
     public function meusServicos()
     {
         $user = Auth::user();
@@ -39,11 +49,9 @@ class ServicoController extends Controller
             ], 403);
         }
 
-        $categorias = Categoria::all();
         return response()->json([
             'status' => true,
             'user' => $user,
-            'categorias' => $categorias,
         ], 200);
     }
 
@@ -56,7 +64,6 @@ class ServicoController extends Controller
             'descricao' => 'required|string|min:10|max:2000',
             'valor' => 'required|numeric|min:0',
             'agenda' => 'required|date',
-            'categoriaId' => 'required|array',
         ]);
         
         $servico = new Servico();
@@ -66,7 +73,7 @@ class ServicoController extends Controller
         $servico->bairro = $validatedData['bairro'];
         $servico->descricao = $validatedData['descricao'];
         $servico->valor = $validatedData['valor'];
-        $anuncio->agenda = $validatedData['agenda'];
+        $servico->agenda = $validatedData['agenda'];
         $servico->save();
 
         if (!$servico) {
@@ -75,8 +82,6 @@ class ServicoController extends Controller
                 'message' => 'Erro ao criar serviço'
             ], 500);
         }
-
-        $servico->categorias()->attach($validatedData['categoriaId']);
 
         return response()->json([
             'status' => true,
@@ -95,9 +100,6 @@ class ServicoController extends Controller
                 ->orWhere('descricao', 'like', "%$search%")
                 ->orWhere('valor','like',"%$search%")
                 ->orWhere('agenda', 'like', "%$search%")
-                ->orWhereHas('user', function ($query) use ($search) {
-                    $query->where('nome', 'like', "%$search%");
-                })
                 ->get();
 
         return response()->json([
@@ -119,14 +121,9 @@ class ServicoController extends Controller
             ], 403);
         }
 
-        $categorias = Categoria::all();
-        $categoriaSelecionada = $servico->categorias->pluck('id')->toArray();
-
         return response()->json([
             'status' => true,
             'servico' => $servico,
-            'categorias' => $categorias,
-            'categoriaSelecionada' => $categoriaSelecionada,
         ], 200);
     }
 
@@ -137,7 +134,6 @@ class ServicoController extends Controller
             'cidade' => 'required|string|min:3|max:255',
             'bairro' => 'required|string|min:3|max:255',
             'descricao' => 'required|string|min:10|max:2000',
-            'categoriaId' => 'required|array'
         ]);
 
         $user = Auth::user();
@@ -156,8 +152,6 @@ class ServicoController extends Controller
             'cidade' => $validatedData['cidade'],
             'bairro' => $validatedData['bairro'],
         ]);
-
-        $servico->categorias()->sync($validatedData['categoriaId']);
 
         return response()->json([
             'status' => true,
@@ -179,7 +173,6 @@ class ServicoController extends Controller
         }
 
         $servico->delete();
-        $servico->servico()->delete();
 
         return response()->json([
             'status' => true,

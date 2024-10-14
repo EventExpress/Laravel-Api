@@ -18,21 +18,21 @@ class Servico extends Model
         'cidade',
         'bairro',
         'descricao',
-        'usuario_id',
+        'user_id',
         'valor',
         'agenda',
     ];
-
-    public function categoria()
-    {
-        return $this->belongsToMany(Categoria::class, 'servico_categoria', 'servico_id', 'categoria_id');
-    }
 
     public function user() {
         return $this->belongsTo(User::class);
     }
 
     public function avaliacao() {
-        return $this->belongsToMany(Avaliacao::class, 'avaliacao_servico', 'servico_id', 'avaliacao_id');;
+        return $this->belongsToMany(Avaliacao::class, 'avaliacao_servico', 'avaliacao_id', 'servico_id');;
+    }
+
+    public function agendado()
+    {
+        return $this->belongsToMany(Agendado::class, 'agendado_servico','agendado_id','servico_id');
     }
 }
