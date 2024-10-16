@@ -12,10 +12,10 @@ class Agendado extends Model
 {
     use HasApiTokens,HasFactory, Notifiable, SoftDeletes;
 
-    protected $fillable = 
+    protected $fillable =
     [
-        'anuncio_id',
         'user_id',
+        'anuncio_id',
         'formapagamento',
         'data_inicio',
         'data_fim',
@@ -26,7 +26,7 @@ class Agendado extends Model
         return $this->belongsTo(Anuncio::class);
     }
 
-    public function servicos()
+    public function servico()
     {
         return $this->belongsToMany(Servico::class, 'agendado_servico','agendado_id','servico_id');
     }

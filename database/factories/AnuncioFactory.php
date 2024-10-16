@@ -50,7 +50,7 @@ class AnuncioFactory extends Factory
 
             // Cria uma avaliação associada a esse usuário
             $avaliacao = Avaliacao::factory()->make(); // Cria uma avaliação
-            $avaliacao->avaliavel_type = Anuncio::class; // Define o tipo polimórfico
+            $avaliacao->avaliavel_type = "Anuncio"; // Define o tipo polimórfico
             $avaliacao->avaliavel_id = $anuncio->id; // Associa à ID do anúncio
             $avaliacao->user_id = $usuarioId; // Associa o ID do usuário que fez a avaliação
             $avaliacao->save(); // Salva a avaliação
