@@ -60,4 +60,13 @@ Route::middleware(['auth:sanctum', 'admin'])->group(function () {
 
     // Restaurar usuários ou anúncios excluídos (soft delete)
     Route::post('/admin/{id}/restore', [AdminController::class, 'restore']);
+
+    // Excluir anuncios
+    Route::delete('/admin/anuncio/{id}', [AdminController::class, 'excluirAnuncio']);
+    
+    // Excluir serviços
+    Route::delete('/admin/servico/{id}', [AdminController::class, 'excluirServico']);
+    
+    // Excluir usuarios
+    Route::delete('/admin/usuario/{id}', [AdminController::class, 'excluirUsuario']);
 });

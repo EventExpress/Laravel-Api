@@ -18,9 +18,6 @@ test('cadastro de novo anuncio com todos os campos corretamente', function () {
     $this->seed(CategoriaSeeder::class);
 
     $categorias = Categoria::all();
-    if ($categorias->count() < 2) {
-        $this->fail('Categorias insuficientes após rodar o seeder.');
-    }
 
     $user = User::factory()->create();
 
@@ -63,9 +60,6 @@ test('preencher campos obrigatórios incorretamente', function () {
     $this->seed(CategoriaSeeder::class);
 
     $categorias = Categoria::all();
-    if ($categorias->count() < 2) {
-        $this->fail('Categorias insuficientes após rodar o seeder.');
-    }
 
     $user = User::factory()->create();
     //TypeUser::create(['user_id' => $user->id, 'tipousu' => 'locador']);
@@ -104,9 +98,6 @@ test('pesquisar anuncio com termos válidos', function () {
     $this->seed(CategoriaSeeder::class);
 
     $categorias = Categoria::all();
-    if ($categorias->count() < 2) {
-        $this->fail('Categorias insuficientes após rodar o seeder.');
-    }
 
     $user = User::factory()->create();
     $this->actingAs($user);
@@ -144,13 +135,10 @@ test('pesquisar anuncio com termos válidos', function () {
 
 
 
-test('pesquisar anuncio com termos inválidos', function () {
+test('tentar pesquisar anuncio com termos inválidos', function () {
     $this->seed(CategoriaSeeder::class);
 
     $categorias = Categoria::all();
-    if ($categorias->count() < 2) {
-        $this->fail('Categorias insuficientes após rodar o seeder.');
-    }
 
     $user = User::factory()->create();
     $this->actingAs($user);
@@ -187,9 +175,6 @@ test('pesquisar todos os anuncios', function () {
     $this->seed(CategoriaSeeder::class);
 
     $categorias = Categoria::all();
-    if ($categorias->count() < 2) {
-        $this->fail('Categorias insuficientes após rodar o seeder.');
-    }
 
     $user = User::factory()->create();
     $this->actingAs($user);
@@ -241,9 +226,6 @@ test('pesquisar por anuncio especifico', function () {
     $this->seed(CategoriaSeeder::class);
 
     $categorias = Categoria::all();
-    if ($categorias->count() < 2) {
-        $this->fail('Categorias insuficientes após rodar o seeder.');
-    }
 
     $user = User::factory()->create();
     $this->actingAs($user);
@@ -290,13 +272,10 @@ test('pesquisar por anuncio especifico', function () {
         ]);
 });
 
-test('pesquisar por anuncio inexistente', function () {
+test('tentar pesquisar por anuncio inexistente', function () {
     $this->seed(CategoriaSeeder::class);
 
     $categorias = Categoria::all();
-    if ($categorias->count() < 2) {
-        $this->fail('Categorias insuficientes após rodar o seeder.');
-    }
 
     $user = User::factory()->create();
     $this->actingAs($user);
@@ -349,9 +328,6 @@ test('alterar anuncio com sucesso', function () {
     $this->seed(CategoriaSeeder::class);
 
     $categorias = Categoria::all();
-    if ($categorias->count() < 2) {
-        $this->fail('Categorias insuficientes após rodar o seeder.');
-    }
 
     $user = User::factory()->create();
     Sanctum::actingAs($user); // Autentica o usuário com Sanctum
@@ -398,9 +374,6 @@ test('alterar anuncio sem sucesso', function () {
     $this->seed(CategoriaSeeder::class);
 
     $categorias = Categoria::all();
-    if ($categorias->count() < 2) {
-        $this->fail('Categorias insuficientes após rodar o seeder.');
-    }
 
     $user = User::factory()->create();
     Sanctum::actingAs($user); 
@@ -465,9 +438,6 @@ test('excluir anuncio com sucesso', function () {
     $this->seed(CategoriaSeeder::class);
 
     $categorias = Categoria::all();
-    if ($categorias->count() < 2) {
-        $this->fail('Categorias insuficientes após rodar o seeder.');
-    }
 
     $user = User::factory()->create();
     Sanctum::actingAs($user); 

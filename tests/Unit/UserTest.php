@@ -66,32 +66,7 @@ test('cadastro com e-mail já registrado', function () {
     
 });
 
-test('cadastro com senha e confirmação de senha diferentes', function () {
-    $response = $this->postJson('/api/register', [
-        'nome' => 'Teste',
-        'sobrenome' => 'Usuário',
-        'telefone' => '41988976119',
-        'datanasc' => '2002-02-13',
-        'email' => 'testeusu@gmail.com',
-        'password' => 'senhaSegura123',
-        'password_confirmation' => 'senhaDiferente123', //senha diferente
-        'tipousu' => ['Locatario'],
-        'cpf' => '13232143212',
-        'cnpj' => '',
-        'cidade' => 'Curitiba',
-        'cep' => '81925-187',
-        'numero' => 199,
-        'bairro' => 'Sitio Cercado',
-    ]);
 
-    $response->assertStatus(422);
-
-    $response->assertJsonValidationErrors(['password']);
-
-    $response->assertJson([
-        'message' => 'The password field confirmation does not match.',
-    ]);
-});
 
 test('cadastro sem preencher todos os campos obrigatórios', function () {
     $response = $this->postJson('/api/register', [

@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Anuncio;
+use App\Models\Servico;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;

@@ -40,7 +40,7 @@ class UserController extends Controller
             'telefone' => 'required|string|min:10|max:15',
             'datanasc' => 'required|date',
             'email' => 'required|email|min:5|max:255|unique:users,email',
-            'password' => 'required|string|min:8|max:255|confirmed',
+            'password' => 'required|string|min:8|max:255',
             'tipousu' => 'required|array',
             'tipousu.*' => 'string|in:Locatario,Locador,Prestador,admin',
             'cpf' => 'required|integer|min:11|unique:users,cpf',

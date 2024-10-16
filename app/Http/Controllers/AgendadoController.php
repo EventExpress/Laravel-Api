@@ -172,11 +172,12 @@ class AgendadoController extends Controller
     }
 
     public function update(Request $request, $id)
-    {
+    { 
         $validatedData = $request->validate([
             'anuncio_id' => 'required|exists:anuncios,id',
             'data_inicio' => 'required|date',
             'data_fim' => 'required|date|after_or_equal:data_inicio',
+            'formapagamento' => 'required|string|max:50',
             'servicoId' => 'required|array'
         ]);
 
@@ -190,25 +191,33 @@ class AgendadoController extends Controller
             ], 403);
         }
 
-        $dataInicio = $validatedData['data_inicio'];
-        $dataFim = $validatedData['data_fim'];
+        // Verificação se o usuário está dentro do prazo de 7 dias antes da data de início
+        $dataAtual = now();
+        $dataInicio = $agendado->data_inicio;
+    
+        if ($dataAtual->diffInDays($dataInicio, false) < 7) {
+            return response()->json([
+                'status' => false,
+                'error' => 'Você só pode editar esta reserva até 7 dias antes da data de início.'
+        ], 403);
+        }
 
         // Verifica se há conflitos de data para o mesmo anúncio
+        $dataFim = $validatedData['data_fim'];
         $conflict = Agendado::where('anuncio_id', $validatedData['anuncio_id'])
-            ->where('id', '!=', $agendado->id) // Exclui a própria reserva do conflito
+            ->where('id', '!=', $agendado->id)
             ->where(function ($query) use ($dataInicio, $dataFim) {
                 $query->where('data_inicio', '<=', $dataFim)
                     ->where('data_fim', '>=', $dataInicio);
         })
         ->exists();
 
-        if ($conflict) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Este anúncio já está reservado para as datas selecionadas.',
-            ], 409);
-        }
-
+    if ($conflict) {
+        return response()->json([
+            'status' => false,
+            'message' => 'Este anúncio já está reservado para as datas selecionadas.',
+        ], 409);
+    }
         $agendado->data_inicio = $dataInicio;
         $agendado->data_fim = $dataFim;
         $agendado->save();
@@ -238,6 +247,16 @@ class AgendadoController extends Controller
                 'status' => false,
                 'error' => 'Reserva não encontrada ou você não tem permissão para excluí-la.'
             ], 403);
+        }
+        // Verificação se o usuário está dentro do prazo de 7 dias antes da data de início
+        $dataAtual = now();
+        $dataInicio = $agendado->data_inicio;
+
+        if ($dataAtual->diffInDays($dataInicio, false) < 7) {
+            return response()->json([
+                'status' => false,
+                'error' => 'Você só pode cancelar esta reserva até 7 dias antes da data de início.'
+        ], 403);
         }
 
         $agendado->delete();
