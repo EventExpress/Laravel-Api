@@ -23,7 +23,7 @@ class ServicoFactory extends Factory
         $user = User::factory()->create();
   
         return [
-            'titulo'=> $this->faker->sentence,
+            'titulo' => $this->faker->text(80),
             'cidade' => $this->faker->city,
             'bairro' => $this->faker->streetName,
             'descricao'=> $this->faker->text(30),

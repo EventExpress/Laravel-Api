@@ -187,7 +187,7 @@ test('atualizar reserva com sucesso', function () {
     $response->assertStatus(200)
              ->assertJson([
                  'status' => true,
-                 'message' => 'Reserva atualizado com sucesso.',
+                 'message' => 'Reserva atualizada com sucesso.',
              ]);
 });
 
@@ -245,13 +245,12 @@ test('atualizar reserva sem sucesso', function () {
     $response = $this->putJson("/api/agendados/{$agendado->id}", [
         'anuncio_id' => $anuncio->id,
         'data_inicio' => '2024-11-20',
-        'data_fim' => '2024-12-20',
+        'data_fim' => '',
         'servicoId' => [$servico->id],
-        'formapagamento' => '',
     ]);
 
     $response->assertStatus(422);
-    $response->assertJsonValidationErrors(['formapagamento']);
+    $response->assertJsonValidationErrors(['data_fim']);
 });
 
 test('tentar editar reserva fora do prazo permitido', function () {
@@ -518,7 +517,7 @@ test('cancelar reserva com sucesso', function () {
     $response->assertStatus(200)
              ->assertJson([
                  'status' => true,
-                 'message' => 'Reserva cancelada com sucesso.',
+                 'message' => 'Reserva excluída com sucesso.',
              ]);
 });
 

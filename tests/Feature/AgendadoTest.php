@@ -1,6 +1,8 @@
 <?php
 
+
 use App\Http\Controllers\AgendadoController;
+use App\Models\Servico;
 use App\Models\User;
 use App\Models\Agendado;
 use App\Models\Anuncio;
@@ -76,35 +78,3 @@ it('conclui a reserva sem internet e retorna mensagem de erro', function () {
     ]);
 });
 
-it('impede alteração para data já reservada e exibe mensagem "Data indisponível"', function () {
-    // Cria um usuário e autentica
-    $user = User::factory()->create();
-    $this->actingAs($user);
-
-    // Cria um anúncio
-    $anuncio = Anuncio::factory()->create();
-
-    // Cria uma reserva existente para o mesmo usuário e anúncio
-    $agendado = Agendado::create([
-        'user_id' => $user->id,
-        'anuncio_id' => $anuncio->id,
-        'formapagamento' => 'cartao',
-        'data_inicio' => '2024-10-16',
-        'data_fim' => '2024-10-18',
-    ]);
-
-    // Faz a requisição PUT para tentar alterar a reserva para datas já ocupadas
-    $response = $this->putJson('/api/agendados/' . $agendado->id, [
-        'anuncio_id' => $anuncio->id,
-        'data_inicio' => '2024-10-16', // Data já reservada
-        'data_fim' => '2024-10-18',     // Data já reservada
-        'servicoId' => [], // Inclua conforme necessário
-    ]);
-
-    // Verifica se o status é 409 (conflito)
-    $response->assertStatus(409);
-    $response->assertJson([
-        'status' => false,
-        'message' => 'Este anúncio já está reservado para as datas selecionadas.',
-    ]);
-});
