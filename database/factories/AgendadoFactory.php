@@ -22,7 +22,7 @@ class AgendadoFactory extends Factory
     public function definition(): array
     {
         $user = User::factory()->create();
-        TypeUser::create(['id' => $user->id, 'tipousu' => 'locatario']);
+        TypeUser::create(['id' => $user->id, 'tipousu' => 'Locatario']);
         $servico = Servico::factory()->create();
         $anuncio = Anuncio::factory()->create();
 
@@ -31,7 +31,7 @@ class AgendadoFactory extends Factory
 
         return [
             'anuncio_id' => $anuncio->id,
-            'formapagamento'=> $this->faker->sentence,
+            'formapagamento'=> 'cartao',
             'data_inicio' => $dataInicio,
             'data_fim' => $dataFim,
         ];

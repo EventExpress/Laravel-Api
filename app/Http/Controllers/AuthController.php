@@ -35,12 +35,11 @@ class AuthController extends Controller
             $user->tokens()->delete();
 
             // Cria um novo token para o usuário
-            $token = $user->createToken('Personal Access Token after login')->plainTextToken;
-
+            $token = $user->createToken('token-name')->plainTextToken;
             return response()->json([
                 'message' => 'Authorized',
-                'token' => $token,
-            ], 200);
+                'token' => $token],200);
+
         } catch (ValidationException $e) {
             return response()->json([
                 'message' => 'Validation Error',
