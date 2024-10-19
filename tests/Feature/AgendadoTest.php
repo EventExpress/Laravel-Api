@@ -1,12 +1,19 @@
 <?php
 
-
+use App\Http\Controllers\UserController;
+use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AgendadoController;
+use App\models\Categoria;
+use App\Models\TypeUser;
 use App\Models\Servico;
 use App\Models\User;
 use App\Models\Agendado;
 use App\Models\Anuncio;
+use Laravel\Sanctum\Sanctum;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+use Illuminate\Http\UploadedFile; 
+use Illuminate\Support\Facades\Auth;
 
 uses(RefreshDatabase::class);
 
@@ -39,7 +46,7 @@ it('impede reserva para datas já ocupadas', function () {
     $response->assertStatus(409);
 });
 
-it('conclui a reserva sem internet e retorna mensagem de erro', function () {
+it('tenta concluir a reserva sem internet e retorna mensagem de erro', function () {
     // Cria um usuário e autentica
     $user = User::factory()->create();
     $this->actingAs($user);
@@ -77,4 +84,122 @@ it('conclui a reserva sem internet e retorna mensagem de erro', function () {
         'exception' => 'Exception',
     ]);
 });
+
+it('Pesquisar reserva inexistente', function () {
+    $user = User::factory()->create();
+    $this->actingAs($user);
+
+    $locador = User::factory()->create();
+    $this->seed(CategoriaSeeder::class);
+    $categorias = Categoria::all();
+    $imagens = [
+        base64_encode(UploadedFile::fake()->image('imagem1.jpg')->getContent()),
+        base64_encode(UploadedFile::fake()->image('imagem2.jpg')->getContent()),
+    ];
+
+    $response = $this->postJson('/api/anuncios', [
+        'user_id' => $locador->id,
+        'titulo' => 'Festa de Casamento',
+        'cidade' => 'Curitiba',
+        'cep' => '81925-187',
+        'numero' => '199',
+        'bairro' => 'Sitio Cercado',
+        'capacidade' => 100,
+        'descricao' => 'Um local perfeito para festas de casamento.',
+        'valor' => 2000,
+        'agenda' => '2024-12-12',
+        'categoriaId' => [$categorias[0]->id, $categorias[1]->id],
+        'imagens' => $imagens,
+    ]);
+
+    $anuncio = Anuncio::latest()->first();
+    $servico = Servico::factory()->create();
+
+    $response = $this->postJson('/api/agendados', [
+        'servico_id' => [$servico->id],
+        'anuncio_id' => $anuncio->id,
+        'formapagamento' => 'dinheiro',
+        'data_inicio' => '2023-10-10', 
+        'data_fim' => '2023-11-10',    
+    ]);
+
+    $response->assertStatus(201)
+             ->assertJson([
+                 'status' => true,
+                 'message' => 'Reserva criada com sucesso.',
+             ]);
+
+    $response = $this->getJson('/api/agendados?search=2024-10-10');//ano errado
+    $response->assertStatus(200)
+             ->assertJson([
+                 'status' => true,
+                 'agendados' => [],
+                 
+             ]);
+});
+
+
+
+
+/*it('alterar sem estar logado exibe mensagem de erro', function () {
+    $user = User::factory()->create();
+    $locador = User::factory()->create();
+    $this->seed(CategoriaSeeder::class);
+    $categorias = Categoria::all();
+    
+    $imagens = [
+        base64_encode(UploadedFile::fake()->image('imagem1.jpg')->getContent()),
+        base64_encode(UploadedFile::fake()->image('imagem2.jpg')->getContent()),
+    ];
+
+    Sanctum::actingAs($locador);
+
+    $response = $this->postJson('/api/anuncios', [
+        'user_id' => $locador->id,
+        'titulo' => 'Festa de Casamento',
+        'cidade' => 'Curitiba',
+        'cep' => '81925-187',
+        'numero' => '199',
+        'bairro' => 'Sitio Cercado',
+        'capacidade' => 100,
+        'descricao' => 'Um local perfeito para festas de casamento.',
+        'valor' => 2000,
+        'agenda' => '2024-12-12',
+        'categoriaId' => [$categorias[0]->id, $categorias[1]->id],
+        'imagens' => $imagens,
+    ]);
+
+    $anuncio = Anuncio::latest()->first();
+
+    $servico = Servico::factory()->create();
+
+    $this->postJson('/api/agendados', [
+        'servico_id' => [$servico->id],
+        'anuncio_id' => $anuncio->id,
+        'formapagamento' => 'dinheiro',
+        'data_inicio' => '2024-11-10',
+        'data_fim' => '2024-12-10',
+    ])->assertStatus(201)
+    ->assertJson([
+        'status' => true,
+        'message' => 'Reserva criada com sucesso.',
+    ]);
+
+    $agendado = Agendado::latest()->first();
+
+    // Faça a requisição como um usuário não autenticado
+    $this->withHeaders([
+        'Authorization' => 'Bearer invalid-token',  // Token inválido para simular falta de autenticação
+    ])->putJson("/api/agendados/{$agendado->id}", [
+        'anuncio_id' => $anuncio->id,
+        'servicoId' => [$servico->id],
+        'data_inicio' => '2024-11-11',
+        'data_fim' => '2024-12-11',
+    ])->assertStatus(401)
+    ->assertJson([
+        'status' => false,
+        'message' => 'Não autenticado.',
+    ]);
+});
+*/
 

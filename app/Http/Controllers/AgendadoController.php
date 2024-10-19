@@ -82,6 +82,29 @@ class AgendadoController extends Controller
             $dataInicio = $validatedData['data_inicio'];
             $dataFim = $validatedData['data_fim'];
 
+            // Verifica a agenda do anúncio
+            $anuncio = Anuncio::find($validatedData['anuncio_id']);
+            if ($dataInicio > $anuncio->agenda || $dataFim > $anuncio->agenda) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'As datas da reserva estão fora da agenda do anúncio.',
+                ], 422);
+            }
+
+            // Verifica a agenda dos serviços selecionados
+            if ($request->has('servicoId') && is_array($request->servicoId)) {
+                foreach ($request->servicoId as $servicoId) {
+                    $servico = Servico::find($servicoId);
+                    if ($dataInicio > $servico->agenda || $dataFim > $servico->agenda) {
+                        return response()->json([
+                            'status' => false,
+                            'message' => "As datas da reserva estão fora da agenda do serviço.",
+                        ], 422);
+                    }
+                }
+            }
+
+            //Conflito de datas
             $conflict = Agendado::where('anuncio_id', $validatedData['anuncio_id'])
                 ->where(function ($query) use ($dataInicio, $dataFim) {
                     $query->where('data_inicio', '<=', $dataFim)
@@ -105,13 +128,7 @@ class AgendadoController extends Controller
             $agendado->save();
 
             if ($request->has('servicoId') && is_array($request->servicoId)) {
-                $validServicoIds = array_filter($request->servicoId, function ($id) {
-                    return !is_null($id) && is_numeric($id);
-                });
-
-                if (!empty($validServicoIds)) {
-                    $agendado->servico()->attach($validServicoIds);
-                }
+                $agendado->servico()->attach($validatedData['servicoId']);
             }
 
             DB::commit(); // Confirme a transação
@@ -186,8 +203,16 @@ class AgendadoController extends Controller
     public function update(Request $request, $id)
 
     {
-        DB::beginTransaction(); // Inicie a transação
+        // Verifica se o usuário está autenticado
+        $user = Auth::user();
+        if (!$user) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Não autenticado.',
+            ], 401);
+        }
 
+        DB::beginTransaction(); // Inicie a transação
 
         try {
             $validatedData = $request->validate([
@@ -205,6 +230,29 @@ class AgendadoController extends Controller
                     'status' => false,
                     'error' => 'Reserva não encontrada ou você não tem permissão para editá-la.'
                 ], 403);
+            }
+
+            $dataInicio = $validatedData['data_inicio'];
+            $dataFim = $validatedData['data_fim'];
+
+            //agenda do anúncio
+            $anuncio = Anuncio::find($validatedData['anuncio_id']);
+            if ($dataInicio > $anuncio->agenda || $dataFim > $anuncio->agenda) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'As datas da reserva estão fora da agenda do anúncio.',
+                ], 422);
+            }
+
+            //agenda dos serviços selecionados
+            foreach ($request->servicoId as $servicoId) {
+                $servico = Servico::find($servicoId);
+                if ($dataInicio > $servico->agenda || $dataFim > $servico->agenda) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => "As datas da reserva estão fora da agenda do serviço.",
+                    ], 422);
+                }
             }
 
             $dataAtual = now();

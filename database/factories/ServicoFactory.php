@@ -29,7 +29,7 @@ class ServicoFactory extends Factory
             'descricao'=> $this->faker->text(30),
             'user_id'=>$user->id,
             'valor'=> $this->faker->randomFloat(2, 10, 1000),
-            'agenda' => $this->faker->dateTimeBetween('-80 years', '-18 years')->format('Y-m-d'),
+            'agenda' => '2024-12-12',
         ];
     }
 }
