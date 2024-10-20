@@ -26,11 +26,15 @@ class AnuncioController extends Controller
         ]);
     }
 
-
+    public function apresentaCategoriaAnuncio()
+    {
+        $categoria = Categoria::all();
+             return response()->json(['categorias' => $categoria], 200);
+    }
 
     public function indexNoAuth()
     {
-        $anuncios = Anuncio::all();
+        $anuncios = Anuncio::with('imagens')->get();
         return response()->json([
             'status' => true,
             'anuncios' => $anuncios,
