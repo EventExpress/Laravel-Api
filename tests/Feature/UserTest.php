@@ -10,7 +10,7 @@ use Tests\TestCase;
 use Illuminate\Support\Facades\Auth;
 
 
-it('criar usuario e deslogar', function()
+it('criar usuario e tentar acessar alguma pagina com usuario deslogado', function()
 {
     $response = $this->postJson('/api/register', [
         'nome' => 'Teste',
