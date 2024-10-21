@@ -8,7 +8,7 @@ use Tests\TestCase;
 
 uses(TestCase::class, RefreshDatabase::class); // refresh cria o banco antes de cada teste / test inclue axuiliares de asserts etc...
 
-test('registrar um usuário com todos os dados válidos', function () {
+test('Cadastro de usuário com todos os dados válidos', function () {
     // Envia os dados para a rota '/api/register' com o método POST
     $response = $this->postJson('/api/register', [
         'nome' => 'Teste',
@@ -32,7 +32,7 @@ test('registrar um usuário com todos os dados válidos', function () {
     $response->assertJson(['message' => 'Usuário criado com sucesso!']);
 });
 
-test('cadastro com e-mail já registrado', function () {
+test('Tentar cadastro com e-mail já registrado', function () {
     //cria usuario com o e-mail especifico
     User::factory()->create([
         'email' => 'testeu@gmail.com',
@@ -68,7 +68,7 @@ test('cadastro com e-mail já registrado', function () {
 
 
 
-test('cadastro sem preencher todos os campos obrigatórios', function () {
+test('Tentar cadastro sem preencher todos os campos obrigatórios', function () {
     $response = $this->postJson('/api/register', [
         'nome' => 'Teste',
         'sobrenome' => 'Usuário',
@@ -96,7 +96,7 @@ test('cadastro sem preencher todos os campos obrigatórios', function () {
 
 });
 
-test('cadastro com formato de e-mail inválido', function () {
+test('Tentar cadastro com formato de e-mail inválido', function () {
     $response = $this->postJson('/api/register', [
         'nome' => 'Teste',
         'sobrenome' => 'Usuário',
@@ -124,7 +124,7 @@ test('cadastro com formato de e-mail inválido', function () {
 
 });
 
-test('cadastro com senha abaixo do limite mínimo de caracteres', function () {
+test('Tentar cadastro com senha abaixo do limite mínimo de caracteres', function () {
     $response = $this->postJson('/api/register', [
         'nome' => 'Teste',
         'sobrenome' => 'Usuário',
@@ -152,7 +152,7 @@ test('cadastro com senha abaixo do limite mínimo de caracteres', function () {
 
 });
 
-test('logar com usuário ou senha inválidos', function () {
+test('Logar com usuário ou senha inválidos', function () {
     $user = User::factory()->create([
         'email' => 'usuario@teste.com',
         'password' => bcrypt('senhaValida123') // Certifique-se de que a senha está criptografada
@@ -170,7 +170,7 @@ test('logar com usuário ou senha inválidos', function () {
     ]);
 });
 
-test('logar com usuário e senha válidos', function () {
+test('Logar com usuário e senha válidos', function () {
     $user = User::factory()->create([
         'email' => 'usuario@teste.com',
         'password' => bcrypt('senhaValida123') //Certifica de que a senha está criptografada
@@ -190,20 +190,3 @@ test('logar com usuário e senha válidos', function () {
     ]);
 });
 
-test('login com SQL injection', function () {
-    $user = User::factory()->create([
-        'email' => 'usuario@teste.com',
-        'password' => bcrypt('senhaValida123')
-    ]);
-
-    $response = $this->postJson('/api/login', [
-        'email' => "usuario@teste.com' OR '1'='1",  //Tentando logar com SQL Injection
-        'password' => 'senhaValida123',  
-    ]);
-
-    $response->assertStatus(422);
-
-    $response->assertJson([
-        'message' => 'Validation Error',
-    ]);
-});

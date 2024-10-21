@@ -141,65 +141,80 @@ it('Pesquisar reserva inexistente', function () {
 
 
 
-/*it('alterar sem estar logado exibe mensagem de erro', function () {
+it('alterar sem estar logado exibe mensagem de erro', function () {
     $user = User::factory()->create();
     $locador = User::factory()->create();
-    $this->seed(CategoriaSeeder::class);
-    $categorias = Categoria::all();
     
-    $imagens = [
-        base64_encode(UploadedFile::fake()->image('imagem1.jpg')->getContent()),
-        base64_encode(UploadedFile::fake()->image('imagem2.jpg')->getContent()),
-    ];
+    $this->assertNotNull($user);
+    
+    $this->actingAs($user);
 
-    Sanctum::actingAs($locador);
-
-    $response = $this->postJson('/api/anuncios', [
-        'user_id' => $locador->id,
-        'titulo' => 'Festa de Casamento',
-        'cidade' => 'Curitiba',
-        'cep' => '81925-187',
-        'numero' => '199',
-        'bairro' => 'Sitio Cercado',
-        'capacidade' => 100,
-        'descricao' => 'Um local perfeito para festas de casamento.',
-        'valor' => 2000,
-        'agenda' => '2024-12-12',
-        'categoriaId' => [$categorias[0]->id, $categorias[1]->id],
-        'imagens' => $imagens,
-    ]);
-
-    $anuncio = Anuncio::latest()->first();
+    $anuncio = Anuncio::factory()->create();
 
     $servico = Servico::factory()->create();
 
-    $this->postJson('/api/agendados', [
-        'servico_id' => [$servico->id],
+    $agendado = Agendado::factory()->create([
+        'user_id' => $user->id,
         'anuncio_id' => $anuncio->id,
         'formapagamento' => 'dinheiro',
         'data_inicio' => '2024-11-10',
         'data_fim' => '2024-12-10',
-    ])->assertStatus(201)
-    ->assertJson([
-        'status' => true,
-        'message' => 'Reserva criada com sucesso.',
     ]);
 
-    $agendado = Agendado::latest()->first();
+    $agendado->servico()->attach($servico->id);
 
-    // Faça a requisição como um usuário não autenticado
-    $this->withHeaders([
-        'Authorization' => 'Bearer invalid-token',  // Token inválido para simular falta de autenticação
-    ])->putJson("/api/agendados/{$agendado->id}", [
-        'anuncio_id' => $anuncio->id,
-        'servicoId' => [$servico->id],
-        'data_inicio' => '2024-11-11',
-        'data_fim' => '2024-12-11',
-    ])->assertStatus(401)
+    
+    //o usuário está autenticado
+    $this->assertTrue(Auth::check());
+
+    Auth::logout();
+
+    //o usuário está deslogado
+    $this->assertFalse(Auth::check());
+
+    $response = $this->getJson("/api/agendados/{$agendado->id}");
+    
+    $response->assertStatus(401)
     ->assertJson([
-        'status' => false,
-        'message' => 'Não autenticado.',
+        'message' => 'Unauthenticated.',
     ]);
 });
-*/
 
+it('Excluir sem estar logado exibe mensagem de erro', function () {
+    $user = User::factory()->create();
+    $locador = User::factory()->create();
+    
+    $this->assertNotNull($user);
+    
+    $this->actingAs($user);
+
+    $anuncio = Anuncio::factory()->create();
+
+    $servico = Servico::factory()->create();
+
+    $agendado = Agendado::factory()->create([
+        'user_id' => $user->id,
+        'anuncio_id' => $anuncio->id,
+        'formapagamento' => 'dinheiro',
+        'data_inicio' => '2024-11-10',
+        'data_fim' => '2024-12-10',
+    ]);
+
+    $agendado->servico()->attach($servico->id);
+
+    
+    //o usuário está autenticado
+    $this->assertTrue(Auth::check());
+
+    Auth::logout();
+
+    //o usuário está deslogado
+    $this->assertFalse(Auth::check());
+
+    $response = $this->deleteJson("/api/agendados/{$agendado->id}");
+    
+    $response->assertStatus(401)
+    ->assertJson([
+        'message' => 'Unauthenticated.',
+    ]);
+});

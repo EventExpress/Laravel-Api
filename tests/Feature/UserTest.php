@@ -93,3 +93,21 @@ it('erro de servidor ao logar', function () {
         'exception' => 'Exception',
     ]);
 });
+
+it('login com SQL injection', function () {
+    $user = User::factory()->create([
+        'email' => 'usuario@teste.com',
+        'password' => bcrypt('senhaValida123')
+    ]);
+
+    $response = $this->postJson('/api/login', [
+        'email' => "usuario@teste.com' OR '1'='1",  //Tentando logar com SQL Injection
+        'password' => 'senhaValida123',  
+    ]);
+
+    $response->assertStatus(422);
+
+    $response->assertJson([
+        'message' => 'Validation Error',
+    ]);
+});
