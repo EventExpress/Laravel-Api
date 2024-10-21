@@ -12,6 +12,8 @@ use Illuminate\Support\Facades\Route;
 Route::post('/register', [UserController::class, 'store']);
 Route::post('/login', [AuthController::class, 'login']);
 
+Route::get('/anuncios/noauth', [AnuncioController::class, 'indexNoAuth']);
+
 // Rotas protegidas
 Route::middleware('auth:sanctum')->group(function () {
     // Rotas para usuário
@@ -28,6 +30,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/anuncios/{id}', [AnuncioController::class, 'show']);
     Route::put('/anuncios/{id}', [AnuncioController::class, 'update']);
     Route::delete('/anuncios/{id}', [AnuncioController::class, 'destroy']);
+    Route::get('/categoria', [AnuncioController::class, 'apresentaCategoriaAnuncio']);
 
     // Rota de busca por anúncios sem autenticação
     Route::get('/anuncios/buscar', [AnuncioController::class, 'indexNoAuth']);
