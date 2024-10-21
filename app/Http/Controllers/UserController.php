@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Http\Controllers;
 
 use App\Models\TypeUser;
@@ -10,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 
 class UserController extends Controller
@@ -19,14 +19,18 @@ class UserController extends Controller
      */
     public function index() : JsonResponse
     {
-        //Busca os usuarios do banco de dados, ordenados pelo id em ordem decressente,paginados
         $users = User::orderby('id')->paginate(2);
 
-        //Retorna os usuarios em json
+        // Log detalhado para a listagem de usuários
+        Log::channel('main')->info('User list retrieved', [
+            'total_users' => count($users),
+            'fetched_at' => now(),
+        ]);
+
         return response()->json([
-            'status'=> true,
+            'status' => true,
             'users' => $users,
-        ],200);
+        ], 200);
     }
 
     /**
@@ -54,7 +58,7 @@ class UserController extends Controller
         DB::beginTransaction();
 
         try {
-
+            // Criação do endereço
             $endereco = new Endereco();
             $endereco->cidade = $request->cidade;
             $endereco->cep = $request->cep;
@@ -62,6 +66,7 @@ class UserController extends Controller
             $endereco->bairro = $request->bairro;
             $endereco->save();
 
+            // Criação do usuário
             $usuario = new User();
             $usuario->nome = $request->nome;
             $usuario->sobrenome = $request->sobrenome;
@@ -83,6 +88,21 @@ class UserController extends Controller
 
             $token = $usuario->createToken('Personal Access Token after register')->plainTextToken;
 
+            // Log detalhado de criação de usuário
+            Log::channel('main')->info('User created', [
+                'user_id' => $usuario->id,
+                'user_name' => $usuario->nome . ' ' . $usuario->sobrenome,
+                'user_email' => $usuario->email,
+                'user_type' => $tipos,
+                'address' => [
+                    'city' => $endereco->cidade,
+                    'cep' => $endereco->cep,
+                    'number' => $endereco->numero,
+                    'neighborhood' => $endereco->bairro,
+                ],
+                'created_at' => now(),
+            ]);
+
             return response()->json([
                 'message' => 'Usuário criado com sucesso!',
                 'user' => $usuario,
@@ -92,13 +112,18 @@ class UserController extends Controller
         } catch (\Exception $e) {
             DB::rollback();
 
+            // Log de erro detalhado ao criar usuário
+            Log::channel('main')->error('User creation failed', [
+                'error_message' => $e->getMessage(),
+                'occurred_at' => now(),
+            ]);
+
             return response()->json([
                 'message' => 'Erro ao criar usuário',
                 'error' => $e->getMessage(),
             ], 500);
         }
     }
-
 
     /**
      * Display the specified resource.
@@ -108,11 +133,26 @@ class UserController extends Controller
         try {
             $user = User::with(['endereco', 'typeUsers'])->findOrFail($id);
 
+            // Log detalhado de exibição de usuário
+            Log::channel('main')->info('User retrieved', [
+                'user_id' => $user->id,
+                'user_name' => $user->nome . ' ' . $user->sobrenome,
+                'user_email' => $user->email,
+                'fetched_at' => now(),
+            ]);
+
             return response()->json([
                 'status' => true,
                 'user' => $user,
             ], 200);
         } catch (\Exception $e) {
+            // Log de erro ao buscar usuário
+            Log::channel('main')->error('User retrieval failed', [
+                'user_id' => $id,
+                'error_message' => $e->getMessage(),
+                'occurred_at' => now(),
+            ]);
+
             return response()->json([
                 'status' => false,
                 'message' => 'Usuário não encontrado',
@@ -164,7 +204,6 @@ class UserController extends Controller
         DB::beginTransaction();
 
         try {
-            // Remover tipousu do array de dados validados para evitar erro de coluna inexistente
             unset($validatedData['tipousu']);
 
             $user->update($validatedData);
@@ -181,13 +220,33 @@ class UserController extends Controller
 
             DB::commit();
 
-            return response()->json(['message' => 'Usuário atualizado com sucesso!', 'user' => $user], 200);
+            Log::channel('main')->info('User updated', [
+                'user_id' => $user->id,
+                'updated_at' => now(),
+                'updated_fields' => $validatedData,
+                'updated_by_user_id' => Auth::id(),
+            ]);
+
+            return response()->json([
+                'message' => 'Usuário atualizado com sucesso!',
+                'user' => $user
+            ], 200);
         } catch (\Exception $e) {
             DB::rollBack();
 
-            return response()->json(['message' => 'Erro ao atualizar usuário.', 'error' => $e->getMessage()], 500);
+            Log::channel('main')->error('User update failed', [
+                'user_id' => $id,
+                'error_message' => $e->getMessage(),
+                'occurred_at' => now(),
+            ]);
+
+            return response()->json([
+                'message' => 'Erro ao atualizar usuário.',
+                'error' => $e->getMessage(),
+            ], 500);
         }
     }
+
 
     /**
      * Remove the specified resource from storage.
@@ -199,11 +258,23 @@ class UserController extends Controller
         try {
             $user = User::findOrFail($id);
 
+            // Desassociar todos os tipos de usuário antes de deletar
             $user->typeUsers()->detach();
 
             $user->delete();
 
             DB::commit();
+
+            // Captura o usuário autenticado que está realizando a exclusão
+            $deletedBy = Auth::user();
+
+            // Log detalhado da exclusão, incluindo quem removeu
+            Log::channel('main')->info('User deleted', [
+                'user_id' => $id,
+                'deleted_by_user_id' => $deletedBy->id,
+                'deleted_by_name' => $deletedBy->nome,
+                'deleted_at' => now(),
+            ]);
 
             return response()->json([
                 'message' => 'Usuário deletado com sucesso!',
@@ -211,6 +282,13 @@ class UserController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
+
+            // Log de erro ao tentar excluir o usuário
+            Log::channel('main')->error('User deletion failed', [
+                'user_id' => $id,
+                'error_message' => $e->getMessage(),
+                'occurred_at' => now(),
+            ]);
 
             return response()->json([
                 'message' => 'Erro ao deletar usuário',
@@ -220,3 +298,4 @@ class UserController extends Controller
     }
 
 }
+
