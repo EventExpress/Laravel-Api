@@ -9,15 +9,59 @@ use App\Models\ImagemAnuncio;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log; // Adicione esta linha
+use Illuminate\Support\Facades\Log;
 
 class AnuncioController extends Controller
 {
-    // ... (outras funções)
+    public function index()
+    {
+        $anuncios = Anuncio::with('imagens')->get();
 
-    /**
-     * Store a newly created resource in storage.
-     */
+        return response()->json([
+            'status' => true,
+            'anuncios' => $anuncios,
+        ]);
+    }
+
+    public function apresentaCategoriaAnuncio()
+    {
+        $categoria = Categoria::all();
+        return response()->json(['categorias' => $categoria], 200);
+    }
+
+    public function meusAnuncios()
+    {
+        $user = Auth::user();
+
+        if ($user->typeUsers->first()->tipousu !== 'locador') {
+            return response()->json([
+                'status' => false,
+                'error' => 'Você não tem permissão para criar anúncios.'
+            ], 403);
+        }
+    }
+
+    public function indexNoAuth()
+    {
+        $anuncios = Anuncio::with('imagens')->get();
+        return response()->json([
+            'status' => true,
+            'anuncios' => $anuncios,
+        ], 200);
+    }
+
+    public function create()
+    {
+        $user = Auth::user();
+
+        if ($user->typeUsers->first()->tipousu !== 'locador') {
+            return response()->json([
+                'status' => false,
+                'error' => 'Você não tem permissão para criar anúncios.'
+            ], 403);
+        }
+    }
+
     public function store(Request $request)
     {
         DB::beginTransaction();
@@ -35,7 +79,7 @@ class AnuncioController extends Controller
                 'agenda' => 'required|date',
                 'categoriaId' => 'required|array',
                 'imagens' => 'required|array',
-                'imagens.*' => 'string', // para aceitar string Base64
+                'imagens.*' => 'string',
             ]);
 
             $endereco = new Endereco();
@@ -58,8 +102,8 @@ class AnuncioController extends Controller
             foreach ($validatedData['imagens'] as $imagemBase64) {
                 $imagemAnuncio = new ImagemAnuncio();
                 $imagemAnuncio->anuncio_id = $anuncio->id;
-                $imagemAnuncio->image_path = $imagemBase64; // armazena a string Base64 diretamente
-                $imagemAnuncio->is_main = false; // define se é a imagem principal
+                $imagemAnuncio->image_path = $imagemBase64;
+                $imagemAnuncio->is_main = false;
                 $imagemAnuncio->save();
             }
 
@@ -67,7 +111,6 @@ class AnuncioController extends Controller
 
             DB::commit();
 
-            // Log de sucesso na criação do anúncio
             Log::channel('loganuncios')->info('Anuncio created', [
                 'anuncio_id' => $anuncio->id,
                 'user_id' => Auth::id(),
@@ -84,7 +127,6 @@ class AnuncioController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
 
-            // Log de erro ao tentar criar o anúncio
             Log::channel('loganuncios')->error('Failed to create Anuncio', [
                 'error_message' => $e->getMessage(),
                 'request_data' => $request->all(),
@@ -98,11 +140,32 @@ class AnuncioController extends Controller
         }
     }
 
-    // ... (outras funções)
+    public function show(Request $request)
+    {
+        $search = $request->input('search');
 
-    /**
-     * Update the specified resource in storage.
-     */
+        $results = Anuncio::whereHas('endereco', function ($query) use ($search) {
+            $query->where('cidade', 'like', "%$search%")
+                ->orWhere('cep', 'like', "%$search%")
+                ->orWhere('numero', 'like', "%$search%")
+                ->orWhere('bairro', 'like', "%$search%");
+        })
+            ->orWhere('titulo', 'like', "%$search%")
+            ->orWhere('capacidade', 'like', "%$search%")
+            ->orWhere('descricao', 'like', "%$search%")
+            ->orWhereHas('user', function ($query) use ($search) {
+                $query->where('nome', 'like', "%$search%");
+            })
+            ->orWhere('valor', 'like', "%$search%")
+            ->orWhere('agenda', 'like', "%$search%")
+            ->get();
+
+        return response()->json([
+            'status' => true,
+            'results' => $results,
+        ], 200);
+    }
+
     public function update(Request $request, $id)
     {
         DB::beginTransaction();
@@ -147,7 +210,6 @@ class AnuncioController extends Controller
 
             if (isset($validatedData['imagens'])) {
                 foreach ($validatedData['imagens'] as $imagem) {
-                    // Armazena a nova imagem e obtém o caminho
                     $imagePath = $imagem->store('imagens/anuncios');
 
                     $imagemAnuncio = new ImagemAnuncio();
@@ -162,7 +224,6 @@ class AnuncioController extends Controller
 
             DB::commit();
 
-            // Log de sucesso na atualização do anúncio
             Log::channel('loganuncios')->info('Anuncio updated', [
                 'anuncio_id' => $anuncio->id,
                 'user_id' => Auth::id(),
@@ -179,7 +240,6 @@ class AnuncioController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
 
-            // Log de erro ao tentar atualizar o anúncio
             Log::channel('loganuncios')->error('Failed to update Anuncio', [
                 'anuncio_id' => $id,
                 'error_message' => $e->getMessage(),
@@ -194,9 +254,6 @@ class AnuncioController extends Controller
         }
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy($id)
     {
         $user = Auth::user();
@@ -216,7 +273,6 @@ class AnuncioController extends Controller
 
             DB::commit();
 
-            // Log de sucesso na exclusão do anúncio
             Log::channel('loganuncios')->info('Anuncio deleted', [
                 'anuncio_id' => $anuncio->id,
                 'user_id' => Auth::id(),
@@ -230,7 +286,6 @@ class AnuncioController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
 
-            // Log de erro ao tentar excluir o anúncio
             Log::channel('loganuncios')->error('Failed to delete Anuncio', [
                 'anuncio_id' => $id,
                 'error_message' => $e->getMessage(),
