@@ -30,6 +30,7 @@ class AgendadoFactory extends Factory
         $dataFim = $this->faker->dateTimeBetween($dataInicio, '+1 month');
 
         return [
+            'user_id'=> $user->id,
             'anuncio_id' => $anuncio->id,
             'formapagamento'=> 'cartao',
             'data_inicio' => $dataInicio,
@@ -40,7 +41,7 @@ class AgendadoFactory extends Factory
     {
         return $this->afterCreating(function (Agendado $agendado) {
             $servico = Servico::inRandomOrder()->first();
-           $agendado->servico()->attach($servico->id);
+            $agendado->servico()->attach($servico->id);
         });
     }
 }

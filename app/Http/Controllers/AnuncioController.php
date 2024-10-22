@@ -15,9 +15,6 @@ use Illuminate\Support\Facades\Storage;
 
 class AnuncioController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
         $anuncios = Anuncio::with('imagens')->get();
@@ -31,16 +28,7 @@ class AnuncioController extends Controller
     public function apresentaCategoriaAnuncio()
     {
         $categoria = Categoria::all();
-             return response()->json(['categorias' => $categoria], 200);
-    }
-
-    public function indexNoAuth()
-    {
-        $anuncios = Anuncio::with('imagens')->get();
-        return response()->json([
-            'status' => true,
-            'anuncios' => $anuncios,
-        ], 200);
+        return response()->json(['categorias' => $categoria], 200);
     }
 
     public function meusAnuncios()
@@ -53,19 +41,17 @@ class AnuncioController extends Controller
                 'error' => 'Você não tem permissão para criar anúncios.'
             ], 403);
         }
+    }
 
-        $user_id = $user->id;
-        $anuncios = Anuncio::where('user_id', $user_id)->get();
-
+    public function indexNoAuth()
+    {
+        $anuncios = Anuncio::with('imagens')->get();
         return response()->json([
             'status' => true,
             'anuncios' => $anuncios,
         ], 200);
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
     public function create()
     {
         $user = Auth::user();
@@ -76,19 +62,8 @@ class AnuncioController extends Controller
                 'error' => 'Você não tem permissão para criar anúncios.'
             ], 403);
         }
-
-        $categorias = Categoria::all();
-
-        return response()->json([
-            'status' => true,
-            'user' => $user,
-            'categorias' => $categorias,
-        ], 200);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
         //
@@ -107,7 +82,7 @@ class AnuncioController extends Controller
                 'agenda' => 'required|date',
                 'categoriaId' => 'required|array',
                 'imagens' => 'required|array',
-                'imagens.*' => 'string', // para aceitar string Base64
+                'imagens.*' => 'string',
             ]);
 
             $endereco = new Endereco();
@@ -130,8 +105,8 @@ class AnuncioController extends Controller
             foreach ($validatedData['imagens'] as $imagemBase64) {
                 $imagemAnuncio = new ImagemAnuncio();
                 $imagemAnuncio->anuncio_id = $anuncio->id;
-                $imagemAnuncio->image_path = $imagemBase64; // armazena a string Base64 diretamente
-                $imagemAnuncio->is_main = false; // define se é a imagem principal
+                $imagemAnuncio->image_path = $imagemBase64;
+                $imagemAnuncio->is_main = false;
                 $imagemAnuncio->save();
             }
 
@@ -139,11 +114,19 @@ class AnuncioController extends Controller
 
             DB::commit();
 
+            Log::channel('loganuncios')->info('Anuncio created', [
+                'anuncio_id' => $anuncio->id,
+                'user_id' => Auth::id(),
+                'created_at' => now(),
+                'titulo' => $anuncio->titulo,
+            ]);
+
             return response()->json([
                 'status' => true,
                 'message' => 'Anúncio criado com sucesso.',
                 'anuncio' => $anuncio,
             ], 201);
+
 
         }catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
@@ -152,8 +135,14 @@ class AnuncioController extends Controller
                 'errors' => $e->errors(),
             ], 422);
 
-        }catch (\Exception $e) {
-            DB::rollBack(); // Rollback em caso de erro
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            Log::channel('loganuncios')->error('Failed to create Anuncio', [
+                'error_message' => $e->getMessage(),
+                'request_data' => $request->all(),
+                'occurred_at' => now(),
+            ]);
 
             return response()->json([
                 'status' => false,
@@ -162,9 +151,6 @@ class AnuncioController extends Controller
         }
     }
 
-    /**
-     * Display the specified resource.
-     */
     public function show(Request $request)
     {
         $search = $request->input('search');
@@ -191,36 +177,6 @@ class AnuncioController extends Controller
         ], 200);
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit($id)
-    {
-        $anuncio = Anuncio::find($id);
-
-        $user = Auth::user();
-
-        if (!$anuncio || $anuncio->user_id != $user->id) {
-            return response()->json([
-                'status' => false,
-                'error' => 'Anúncio não encontrado ou você não tem permissão para editá-lo.'
-            ], 403);
-        }
-
-        $categorias = Categoria::all();
-        $categoriaSelecionada = $anuncio->categorias->pluck('id')->toArray();
-
-        return response()->json([
-            'status' => true,
-            'anuncio' => $anuncio,
-            'categorias' => $categorias,
-            'categoriaSelecionada' => $categoriaSelecionada,
-        ], 200);
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
     public function update(Request $request, $id)
     {
         DB::beginTransaction();
@@ -263,10 +219,8 @@ class AnuncioController extends Controller
                 'bairro' => $validatedData['bairro'],
             ]);
 
-
             if (isset($validatedData['imagens'])) {
                 foreach ($validatedData['imagens'] as $imagem) {
-                    // Armazena a nova imagem e obtém o caminho
                     $imagePath = $imagem->store('imagens/anuncios');
 
                     $imagemAnuncio = new ImagemAnuncio();
@@ -277,10 +231,16 @@ class AnuncioController extends Controller
                 }
             }
 
-
             $anuncio->categorias()->sync($validatedData['categoriaId']);
 
             DB::commit();
+
+            Log::channel('loganuncios')->info('Anuncio updated', [
+                'anuncio_id' => $anuncio->id,
+                'user_id' => Auth::id(),
+                'updated_at' => now(),
+                'titulo' => $anuncio->titulo,
+            ]);
 
             return response()->json([
                 'status' => true,
@@ -297,6 +257,14 @@ class AnuncioController extends Controller
             
         } catch (\Exception $e) {
             DB::rollBack();
+
+            Log::channel('loganuncios')->error('Failed to update Anuncio', [
+                'anuncio_id' => $id,
+                'error_message' => $e->getMessage(),
+                'request_data' => $request->all(),
+                'occurred_at' => now(),
+            ]);
+
             return response()->json([
                 'status' => false,
                 'message' => 'Erro ao atualizar anúncio: ' . $e->getMessage()
@@ -304,9 +272,6 @@ class AnuncioController extends Controller
         }
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy($id)
     {
         $user = Auth::user();
@@ -319,12 +284,36 @@ class AnuncioController extends Controller
             ], 403);
         }
 
-        $anuncio->delete();
-        $anuncio->endereco()->delete();
+        DB::beginTransaction();
+        try {
+            $anuncio->delete();
+            $anuncio->endereco()->delete();
 
-        return response()->json([
-            'status' => true,
-            'message' => 'Anúncio excluído com sucesso.'
-        ], 200);
+            DB::commit();
+
+            Log::channel('loganuncios')->info('Anuncio deleted', [
+                'anuncio_id' => $anuncio->id,
+                'user_id' => Auth::id(),
+                'deleted_at' => now(),
+            ]);
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Anúncio excluído com sucesso.'
+            ], 200);
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            Log::channel('loganuncios')->error('Failed to delete Anuncio', [
+                'anuncio_id' => $id,
+                'error_message' => $e->getMessage(),
+                'occurred_at' => now(),
+            ]);
+
+            return response()->json([
+                'status' => false,
+                'message' => 'Erro ao excluir anúncio: ' . $e->getMessage()
+            ], 500);
+        }
     }
 }

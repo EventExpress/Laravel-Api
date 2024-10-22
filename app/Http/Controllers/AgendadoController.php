@@ -12,12 +12,18 @@ use GuzzleHttp\Exception\RequestException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class AgendadoController extends Controller
 {
     public function index()
     {
         $agendados = Agendado::with(['user', 'anuncio', 'servico'])->get();
+
+        Log::channel('logagendados')->info('Acessou o índice de agendados', [
+            'agendados_count' => $agendados->count(),
+            'accessed_at' => now(),
+        ]);
 
         return response()->json([
             'status' => true,
@@ -30,6 +36,12 @@ class AgendadoController extends Controller
         $user = Auth::user();
 
         if ($user->typeUsers->first()->tipousu !== 'locatario') {
+            Log::channel('logagendados')->warning('Acesso negado a meus agendados', [
+                'user_id' => $user->id,
+                'reason' => 'Permissão negada',
+                'accessed_at' => now(),
+            ]);
+
             return response()->json([
                 'status' => false,
                 'error' => 'Você não tem permissão para reservar.'
@@ -38,6 +50,12 @@ class AgendadoController extends Controller
 
         $user_id = $user->id;
         $agendados = Agendado::where('user_id', $user_id)->get();
+
+        Log::channel('logagendados')->info('Acessou meus agendados', [
+            'user_id' => $user_id,
+            'agendados_count' => $agendados->count(),
+            'accessed_at' => now(),
+        ]);
 
         return response()->json([
             'status' => true,
@@ -50,6 +68,12 @@ class AgendadoController extends Controller
         $user = Auth::user();
 
         if ($user->typeUsers->first()->tipousu !== 'locatario') {
+            Log::channel('logagendados')->warning('Acesso negado ao criar agendado', [
+                'user_id' => $user->id,
+                'reason' => 'Permissão negada',
+                'accessed_at' => now(),
+            ]);
+
             return response()->json([
                 'status' => false,
                 'error' => 'Você não tem permissão para reservar.'
@@ -58,6 +82,12 @@ class AgendadoController extends Controller
 
         $anuncios = Anuncio::all();
         $servicos = Servico::all();
+
+        Log::channel('logagendados')->info('Acessou o método de criação de agendado', [
+            'user_id' => $user->id,
+            'accessed_at' => now(),
+        ]);
+
         return response()->json([
             'status' => true,
             'user' => $user,
@@ -68,7 +98,7 @@ class AgendadoController extends Controller
 
     public function store(Request $request)
     {
-        DB::beginTransaction(); // Inicie a transação
+        DB::beginTransaction();
 
         try {
             $validatedData = $request->validate([
@@ -113,6 +143,14 @@ class AgendadoController extends Controller
                 ->exists();
 
             if ($conflict) {
+                Log::channel('logagendados')->warning('Conflito ao criar agendado', [
+                    'user_id' => Auth::id(),
+                    'anuncio_id' => $validatedData['anuncio_id'],
+                    'data_inicio' => $dataInicio,
+                    'data_fim' => $dataFim,
+                    'occurred_at' => now(),
+                ]);
+
                 return response()->json([
                     'status' => false,
                     'message' => 'Este anúncio já está reservado para as datas selecionadas.',
@@ -131,7 +169,15 @@ class AgendadoController extends Controller
                 $agendado->servico()->attach($validatedData['servicoId']);
             }
 
-            DB::commit(); // Confirme a transação
+            DB::commit();
+
+            Log::channel('logagendados')->info('Reserva criada com sucesso', [
+                'agendado_id' => $agendado->id,
+                'user_id' => Auth::id(),
+                'created_at' => now(),
+                'data_inicio' => $dataInicio,
+                'data_fim' => $dataFim,
+            ]);
 
             return response()->json([
                 'status' => true,
@@ -140,12 +186,6 @@ class AgendadoController extends Controller
             ], 201);
 
         } catch (\Exception $e) {
-            return response()->json([
-                'status' => false,
-                'errors' => $e->errors(),
-            ], 422);
-
-        }catch (\Exception $e) {
             DB::rollBack(); // Reverte a transação em caso de erro
             return response()->json([
                 'status' => false,
@@ -164,6 +204,12 @@ class AgendadoController extends Controller
             ->orWhereHas('user', function ($query) use ($search) {
                 $query->where('nome', 'like', "%$search%");
             })->get();
+
+        Log::channel('logagendados')->info('Buscou agendados', [
+            'search' => $search,
+            'results_count' => $agendados->count(),
+            'searched_at' => now(),
+        ]);
 
         if ($agendados->isEmpty()) {
             return response()->json([
@@ -184,13 +230,27 @@ class AgendadoController extends Controller
         $user = Auth::user();
 
         if (!$agendado || $agendado->user_id != $user->id) {
+            Log::channel('logagendados')->warning('Acesso negado ao editar agendado', [
+                'user_id' => $user->id,
+                'agendado_id' => $id,
+                'reason' => 'Reserva não encontrada ou permissão negada',
+                'accessed_at' => now(),
+            ]);
+
             return response()->json([
                 'status' => false,
                 'error' => 'Reserva não encontrada ou você não tem permissão para editá-lo.'
             ], 403);
         }
+
         $servicos = Servico::all();
         $servicoSelecionado = $agendado->servico->pluck('id')->toArray();
+
+        Log::channel('logagendados')->info('Acessou o método de edição de agendado', [
+            'user_id' => $user->id,
+            'agendado_id' => $id,
+            'accessed_at' => now(),
+        ]);
 
         return response()->json([
             'status' => true,
@@ -203,72 +263,40 @@ class AgendadoController extends Controller
     public function update(Request $request, $id)
 
     {
-        // Verifica se o usuário está autenticado
-        $user = Auth::user();
-        if (!$user) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Não autenticado.',
-            ], 401);
-        }
-
         DB::beginTransaction(); // Inicie a transação
 
         try {
             $validatedData = $request->validate([
                 'anuncio_id' => 'required|exists:anuncios,id',
+                'servicoId' => 'nullable|array',
+                'formapagamento' => 'required|string|max:50',
                 'data_inicio' => 'required|date',
                 'data_fim' => 'required|date|after_or_equal:data_inicio',
-                'servicoId' => 'required|array'
             ]);
 
             $user = Auth::user();
             $agendado = Agendado::find($id);
 
             if (!$agendado || $agendado->user_id != $user->id) {
+                Log::channel('logagendados')->warning('Acesso negado ao atualizar agendado', [
+                    'user_id' => $user->id,
+                    'agendado_id' => $id,
+                    'reason' => 'Reserva não encontrada ou permissão negada',
+                    'accessed_at' => now(),
+                ]);
+
                 return response()->json([
                     'status' => false,
-                    'error' => 'Reserva não encontrada ou você não tem permissão para editá-la.'
+                    'error' => 'Reserva não encontrada ou você não tem permissão para editá-lo.'
                 ], 403);
             }
 
             $dataInicio = $validatedData['data_inicio'];
             $dataFim = $validatedData['data_fim'];
 
-            //agenda do anúncio
-            $anuncio = Anuncio::find($validatedData['anuncio_id']);
-            if ($dataInicio > $anuncio->agenda || $dataFim > $anuncio->agenda) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'As datas da reserva estão fora da agenda do anúncio.',
-                ], 422);
-            }
-
-            //agenda dos serviços selecionados
-            foreach ($request->servicoId as $servicoId) {
-                $servico = Servico::find($servicoId);
-                if ($dataInicio > $servico->agenda || $dataFim > $servico->agenda) {
-                    return response()->json([
-                        'status' => false,
-                        'message' => "As datas da reserva estão fora da agenda do serviço.",
-                    ], 422);
-                }
-            }
-
-            $dataAtual = now();
-            $dataInicio = $agendado->data_inicio;
-
-            if ($dataAtual->diffInDays($dataInicio, false) < 7) {
-                return response()->json([
-                    'status' => false,
-                    'error' => 'Você só pode editar esta reserva até 7 dias antes da data de início.'
-            ], 403);
-            }
-
-            $dataFim = $validatedData['data_fim'];
             // Verifica se há conflitos de data para o mesmo anúncio
             $conflict = Agendado::where('anuncio_id', $validatedData['anuncio_id'])
-                ->where('id', '!=', $agendado->id) // Exclui a própria reserva do conflito
+                ->where('id', '!=', $id)
                 ->where(function ($query) use ($dataInicio, $dataFim) {
                     $query->where('data_inicio', '<=', $dataFim)
                         ->where('data_fim', '>=', $dataInicio);
@@ -276,22 +304,29 @@ class AgendadoController extends Controller
                 ->exists();
 
             if ($conflict) {
+                Log::channel('logagendados')->warning('Conflito ao atualizar agendado', [
+                    'user_id' => $user->id,
+                    'agendado_id' => $id,
+                    'anuncio_id' => $validatedData['anuncio_id'],
+                    'data_inicio' => $dataInicio,
+                    'data_fim' => $dataFim,
+                    'occurred_at' => now(),
+                ]);
+
                 return response()->json([
                     'status' => false,
-                    'message' => 'Data indisponível',
+                    'message' => 'Este anúncio já está reservado para as datas selecionadas.',
                 ], 409);
             }
 
-            $agendado->data_inicio = $dataInicio;
-            $agendado->data_fim = $dataFim;
-            $agendado->save();
-
+            // Atualiza os dados da reserva
             $agendado->update([
                 'anuncio_id' => $validatedData['anuncio_id'],
                 'data_inicio' => $dataInicio,
                 'data_fim' => $dataFim,
             ]);
 
+            // Sincroniza os serviços
             $agendado->servico()->sync($validatedData['servicoId']);
 
             DB::commit(); // Confirme a transação
@@ -302,28 +337,28 @@ class AgendadoController extends Controller
                 'agendado' => $agendado,
             ], 200);
 
-            }catch (\Exception $e) {
-                // Captura erros de validação e retorna o código 422
-                return response()->json([
-                    'status' => false,
-                    'errors' => $e->errors(),
-                ], 422);
-        
-            } catch (\Exception $e) {
-                DB::rollBack(); // Reverte a transação em caso de erro
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Erro ao atualizar a reserva: ' . $e->getMessage(),
-                ], 500);
-            }
+        } catch (\Exception $e) {
+            DB::rollBack(); // Reverte a transação em caso de erro
+            return response()->json([
+                'status' => false,
+                'message' => 'Erro ao atualizar a reserva: ' . $e->getMessage(),
+            ], 500);
         }
+    }
 
     public function destroy($id)
     {
-        $agendado = Agendado::find($id);
         $user = Auth::user();
+        $agendado = Agendado::find($id);
 
         if (!$agendado || $agendado->user_id != $user->id) {
+            Log::channel('logagendados')->warning('Acesso negado ao excluir agendado', [
+                'user_id' => $user->id,
+                'agendado_id' => $id,
+                'reason' => 'Reserva não encontrada ou permissão negada',
+                'accessed_at' => now(),
+            ]);
+
             return response()->json([
                 'status' => false,
                 'error' => 'Reserva não encontrada ou você não tem permissão para excluí-la.'
@@ -342,9 +377,15 @@ class AgendadoController extends Controller
 
         $agendado->delete();
 
+        Log::channel('logagendados')->info('Reserva excluída com sucesso', [
+            'agendado_id' => $id,
+            'user_id' => $user->id,
+            'deleted_at' => now(),
+        ]);
+
         return response()->json([
             'status' => true,
-            'message' => 'Reserva excluída com sucesso.'
+            'message' => 'Reserva excluída com sucesso.',
         ], 200);
     }
 }

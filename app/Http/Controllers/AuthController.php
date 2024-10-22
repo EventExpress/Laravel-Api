@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Exception;
 
@@ -36,6 +37,9 @@ class AuthController extends Controller
 
             // Cria um novo token para o usuário
             $token = $user->createToken('token-name')->plainTextToken;
+
+            Log::channel('main')->info('Login success', ['user_id' => $user->id, 'email' => $user->email]);
+
             return response()->json([
                 'message' => 'Authorized',
                 'token' => $token],200);
@@ -75,6 +79,8 @@ class AuthController extends Controller
                     'message' => 'Token removed successfully and User disconnected.',
                 ], 200);
             }
+
+            Log::channel('main')->info('Logout success', ['user_id' => $user->id, 'email' => $user->email]);
 
             return response()->json([
                 'message' => 'Token not found.',
