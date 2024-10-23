@@ -185,13 +185,19 @@ class AgendadoController extends Controller
                 'agendado' => $agendado,
             ], 201);
 
-        } catch (\Exception $e) {
-            DB::rollBack(); // Reverte a transação em caso de erro
-            return response()->json([
-                'status' => false,
-                'message' => 'Erro ao criar a reserva: ' . $e->getMessage(),
-            ], 500);
-        }
+            } catch (\Illuminate\Validation\ValidationException $e) {
+                return response()->json([
+                    'status' => false,
+                    'errors' => $e->errors(),
+                ], 422);
+
+            } catch (\Exception $e) {
+                DB::rollBack(); // Reverte a transação em caso de erro
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Erro ao criar a reserva: ' . $e->getMessage(),
+                ], 500);
+            } 
     }
 
     public function show(Request $request)
@@ -294,7 +300,34 @@ class AgendadoController extends Controller
             $dataInicio = $validatedData['data_inicio'];
             $dataFim = $validatedData['data_fim'];
 
-            // Verifica se há conflitos de data para o mesmo anúncio
+            $anuncio = Anuncio::find($validatedData['anuncio_id']);
+            if ($dataInicio > $anuncio->agenda || $dataFim > $anuncio->agenda) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'As datas da reserva estão fora da agenda do anúncio.',
+                ], 422);
+            }
+
+            foreach ($request->servicoId as $servicoId) {
+                $servico = Servico::find($servicoId);
+                if ($dataInicio > $servico->agenda || $dataFim > $servico->agenda) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => "As datas da reserva estão fora da agenda do serviço.",
+                    ], 422);
+                }
+            }
+
+            $dataAtual = now();
+            $dataInicio = $agendado->data_inicio;
+
+            if ($dataAtual->diffInDays($dataInicio, false) < 3) {
+                return response()->json([
+                    'status' => false,
+                    'error' => 'Você só pode editar esta reserva até 3 dias antes da data de início.'
+            ], 403);
+            }
+
             $conflict = Agendado::where('anuncio_id', $validatedData['anuncio_id'])
                 ->where('id', '!=', $id)
                 ->where(function ($query) use ($dataInicio, $dataFim) {
@@ -319,17 +352,15 @@ class AgendadoController extends Controller
                 ], 409);
             }
 
-            // Atualiza os dados da reserva
             $agendado->update([
                 'anuncio_id' => $validatedData['anuncio_id'],
                 'data_inicio' => $dataInicio,
                 'data_fim' => $dataFim,
             ]);
 
-            // Sincroniza os serviços
             $agendado->servico()->sync($validatedData['servicoId']);
 
-            DB::commit(); // Confirme a transação
+            DB::commit(); 
 
             return response()->json([
                 'status' => true,
@@ -337,13 +368,19 @@ class AgendadoController extends Controller
                 'agendado' => $agendado,
             ], 200);
 
-        } catch (\Exception $e) {
-            DB::rollBack(); // Reverte a transação em caso de erro
-            return response()->json([
-                'status' => false,
-                'message' => 'Erro ao atualizar a reserva: ' . $e->getMessage(),
-            ], 500);
-        }
+            } catch (\Illuminate\Validation\ValidationException $e) {
+                return response()->json([
+                    'status' => false,
+                    'errors' => $e->errors(),
+                ], 422);
+    
+            } catch (\Exception $e) {
+                DB::rollBack(); // Reverte a transação em caso de erro
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Erro ao atualizar a reserva: ' . $e->getMessage(),
+                ], 500);
+            } 
     }
 
     public function destroy($id)
@@ -364,14 +401,14 @@ class AgendadoController extends Controller
                 'error' => 'Reserva não encontrada ou você não tem permissão para excluí-la.'
             ], 403);
         }
-        // Verificação se o usuário está dentro do prazo de 7 dias antes da data de início
+
         $dataAtual = now();
         $dataInicio = $agendado->data_inicio;
 
-        if ($dataAtual->diffInDays($dataInicio, false) < 7) {
+        if ($dataAtual->diffInDays($dataInicio, false) < 3) {
             return response()->json([
                 'status' => false,
-                'error' => 'Você só pode cancelar esta reserva até 7 dias antes da data de início.'
+                'error' => 'Você só pode cancelar esta reserva até 3 dias antes da data de início.'
         ], 403);
         }
 

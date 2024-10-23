@@ -287,8 +287,8 @@ test('tentar editar reserva fora do prazo permitido', function () {
         'servico_id' => [$servico->id],
         'anuncio_id' => $anuncio->id,
         'formapagamento' => 'dinheiro',
-        'data_inicio' => now()->addDays(6)->toDateString(), // Reserva para daqui 6 dias
-        'data_fim' => now()->addDays(10)->toDateString(),
+        'data_inicio' => now()->addDays(2)->toDateString(), // Reserva para daqui 3 dias
+        'data_fim' => now()->addDays(3)->toDateString(),
     ]);
 
     $agendado = Agendado::latest()->first();
@@ -304,7 +304,7 @@ test('tentar editar reserva fora do prazo permitido', function () {
     $response->assertStatus(403)
              ->assertJson([
                  'status' => false,
-                 'error' => 'Você só pode editar esta reserva até 7 dias antes da data de início.',
+                 'error' => 'Você só pode editar esta reserva até 3 dias antes da data de início.',
              ]);
 });
 
@@ -503,8 +503,8 @@ test('tentar cancelar reserva fora do prazo permitido', function () {
         'servico_id' => [$servico->id],
         'anuncio_id' => $anuncio->id,
         'formapagamento' => 'dinheiro',
-        'data_inicio' => now()->addDays(6)->toDateString(), // Reserva para daqui 6 dias
-        'data_fim' => now()->addDays(10)->toDateString(),
+        'data_inicio' => now()->addDays(2)->toDateString(), // Reserva para daqui 3 dias
+        'data_fim' => now()->addDays(3)->toDateString(),
     ]);
 
     $agendado = Agendado::latest()->first();
@@ -514,7 +514,7 @@ test('tentar cancelar reserva fora do prazo permitido', function () {
     $response->assertStatus(403)
              ->assertJson([
                  'status' => false,
-                 'error' => 'Você só pode cancelar esta reserva até 7 dias antes da data de início.',
+                 'error' => 'Você só pode cancelar esta reserva até 3 dias antes da data de início.',
              ]);
 });
 
