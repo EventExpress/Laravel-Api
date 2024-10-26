@@ -51,6 +51,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/agendados/{id}', [AgendadoController::class, 'show']);
     Route::put('/agendados/{id}', [AgendadoController::class, 'update']);
     Route::delete('/agendados/{id}', [AgendadoController::class, 'destroy']);
+
 });
 
 // Rotas protegidas para administradores
@@ -66,10 +67,10 @@ Route::middleware(['auth:sanctum', 'admin'])->group(function () {
 
     // Excluir anuncios
     Route::delete('/admin/anuncio/{id}', [AdminController::class, 'excluirAnuncio']);
-    
+
     // Excluir serviços
     Route::delete('/admin/servico/{id}', [AdminController::class, 'excluirServico']);
-    
+
     // Excluir usuarios
     Route::delete('/admin/usuario/{id}', [AdminController::class, 'excluirUsuario']);
 });

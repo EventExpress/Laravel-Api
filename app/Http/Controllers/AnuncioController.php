@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\AnuncioStatus;
 use App\Models\Anuncio;
 use App\Models\Categoria;
 use App\Models\Endereco;
 use App\Models\ImagemAnuncio;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -79,7 +81,8 @@ class AnuncioController extends Controller
                 'capacidade' => 'required|integer|min:1|max:10000',
                 'descricao' => 'required|string|min:10|max:2000',
                 'valor' => 'required|numeric|min:0',
-                'agenda' => 'required|date',
+                'agenda' => 'nullable|array',
+                'agenda.*' => 'date',
                 'categoriaId' => 'required|array',
                 'imagens' => 'required|array',
                 'imagens.*' => 'string',
@@ -100,6 +103,14 @@ class AnuncioController extends Controller
             $anuncio->descricao = $validatedData['descricao'];
             $anuncio->valor = $validatedData['valor'];
             $anuncio->agenda = $validatedData['agenda'];
+            $anuncio->status = 'ativo';
+
+            if (!empty($validatedData['agenda'])) {
+                $anuncio->agenda = json_encode($validatedData['agenda']);
+            } else {
+                $anuncio->agenda = json_encode([]); // inicializa como um array vazio se não houver datas
+            }
+
             $anuncio->save();
 
             foreach ($validatedData['imagens'] as $imagemBase64) {
@@ -183,16 +194,18 @@ class AnuncioController extends Controller
 
         try {
             $validatedData = $request->validate([
-                'titulo' => 'required|string|min:4|max:255',
-                'cidade' => 'required|string|min:3|max:255',
-                'cep' => 'required|string|min:8|max:9',
-                'numero' => 'required|integer|min:1',
-                'bairro' => 'required|string|min:3|max:255',
-                'capacidade' => 'required|integer|min:1|max:10000',
-                'descricao' => 'required|string|min:10|max:2000',
-                'categoriaId' => 'required|array',
+                'titulo' => 'sometimes|required|string|min:4|max:255',
+                'cidade' => 'sometimes|required|string|min:3|max:255',
+                'cep' => 'sometimes|required|string|min:8|max:9',
+                'numero' => 'sometimes|required|integer|min:1',
+                'bairro' => 'sometimes|required|string|min:3|max:255',
+                'capacidade' => 'sometimes|required|integer|min:1|max:10000',
+                'descricao' => 'sometimes|required|string|min:10|max:2000',
+                'categoriaId' => 'sometimes|required|array',
                 'imagens' => 'nullable|array',
                 'imagens.*' => 'image|mimes:jpg,jpeg,png|max:2048',
+                'status' => 'sometimes|required|in:ativo,inativo',
+                'agenda' => 'nullable|array',
             ]);
 
             $user = Auth::user();
@@ -205,19 +218,21 @@ class AnuncioController extends Controller
                 ], 403);
             }
 
-            $anuncio->update([
-                'titulo' => $validatedData['titulo'],
-                'capacidade' => $validatedData['capacidade'],
-                'descricao' => $validatedData['descricao'],
-            ]);
+            $anuncio->update(array_filter([
+                'titulo' => $validatedData['titulo'] ?? $anuncio->titulo,
+                'capacidade' => $validatedData['capacidade'] ?? $anuncio->capacidade,
+                'descricao' => $validatedData['descricao'] ?? $anuncio->descricao,
+                'status' => $validatedData['status'] ?? $anuncio->status,
+                'agenda' => $validatedData['agenda'] ?? $anuncio->agenda,
+            ]));
 
             $endereco = Endereco::find($anuncio->endereco_id);
-            $endereco->update([
-                'cidade' => $validatedData['cidade'],
-                'cep' => $validatedData['cep'],
-                'numero' => $validatedData['numero'],
-                'bairro' => $validatedData['bairro'],
-            ]);
+            $endereco->update(array_filter([
+                'cidade' => $validatedData['cidade'] ?? $endereco->cidade,
+                'cep' => $validatedData['cep'] ?? $endereco->cep,
+                'numero' => $validatedData['numero'] ?? $endereco->numero,
+                'bairro' => $validatedData['bairro'] ?? $endereco->bairro,
+            ]));
 
             if (isset($validatedData['imagens'])) {
                 foreach ($validatedData['imagens'] as $imagem) {
@@ -231,7 +246,10 @@ class AnuncioController extends Controller
                 }
             }
 
-            $anuncio->categorias()->sync($validatedData['categoriaId']);
+            // Sincroniza categorias apenas se a categoriaId estiver presente
+            if (isset($validatedData['categoriaId'])) {
+                $anuncio->categorias()->sync($validatedData['categoriaId']);
+            }
 
             DB::commit();
 
@@ -248,13 +266,13 @@ class AnuncioController extends Controller
                 'anuncio' => $anuncio,
             ], 200);
 
-        }catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
                 'status' => false,
                 'message' => 'Erro de validação.',
                 'errors' => $e->errors(),
             ], 422);
-            
+
         } catch (\Exception $e) {
             DB::rollBack();
 
@@ -271,6 +289,7 @@ class AnuncioController extends Controller
             ], 500);
         }
     }
+
 
     public function destroy($id)
     {
