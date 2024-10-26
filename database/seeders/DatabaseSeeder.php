@@ -21,7 +21,7 @@ class DatabaseSeeder extends Seeder
 
         try {
             Anuncio::factory()->create();
-            Agendado::factory()->create();
+            //Agendado::factory()->create();
 
             DB::commit();
         } catch (\Exception $e) {
