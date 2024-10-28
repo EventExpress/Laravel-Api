@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middeleware\AdminAccess;
 use App\Http\Controllers\ServicoController;
 use App\Http\Controllers\AgendadoController;
 use App\Http\Controllers\AdminController;
@@ -64,12 +65,9 @@ Route::middleware(['auth:sanctum', 'admin'])->group(function () {
     // Restaurar usuários ou anúncios excluídos (soft delete)
     Route::post('/admin/{id}/restore', [AdminController::class, 'restore']);
 
-    // Excluir anuncios
-    Route::delete('/admin/anuncio/{id}', [AdminController::class, 'excluirAnuncio']);
-    
-    // Excluir serviços
-    Route::delete('/admin/servico/{id}', [AdminController::class, 'excluirServico']);
-    
-    // Excluir usuarios
-    Route::delete('/admin/usuario/{id}', [AdminController::class, 'excluirUsuario']);
+    Route::delete('/admin/user/{id}', [AdminController::class, 'destroyUser']);
+
+    Route::delete('/admin/servicos/{id}', [AdminController::class, 'destroyServico']);
+
+    Route::delete('/admin/anuncios/{id}', [AdminController::class, 'destroyAnuncio']);
 });

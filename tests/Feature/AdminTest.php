@@ -1,5 +1,7 @@
 <?php 
 
+use App\Http\Controllers\AdminController;
+use App\Http\Middeleware\AdminAccess;
 use App\Models\Servico;
 use App\Models\Anuncio;
 use App\Models\User;
@@ -53,3 +55,19 @@ uses(RefreshDatabase::class);
     // Verifica se o serviço foi excluído do banco de dados
     $this->assertDeleted('servicos', ['id' => $servico->id]);
 });*/
+
+it('deletar usuário como admin', function () {
+    $admin = User::factory()->create();
+    TypeUser::create(['user_id' => $admin->id, 'tipousu' => 'admin']);
+    $user = User::factory()->create();
+
+    $this->actingAs($admin);
+
+    $response = $this->deleteJson("/api/admin/user/{$user->id}");
+    
+    $response->assertStatus(200); 
+    $response->assertJson(['message' => 'Usuário deletado com sucesso!']);
+    $this->assertSoftDeleted('user', ['id' => $user->id]);
+
+   
+});
