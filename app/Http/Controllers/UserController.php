@@ -183,7 +183,7 @@ class UserController extends Controller
                 Rule::unique('users')->ignore($user->id),
             ],
             'password' => 'sometimes|required|string|min:8|max:255',
-            'tipousu' => 'required|array',
+            'tipousu' => 'sometimes|required|array', // Tipousu é opcional, mas se fornecido, deve ser um array
             'tipousu.*' => 'string|in:Locatario,Locador,Prestador,admin',
             'cpf' => [
                 'sometimes',

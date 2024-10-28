@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\AnuncioStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -22,6 +23,13 @@ class Anuncio extends Model
         'valor',
         'agenda',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'AnuncioStatus' => AnuncioStatus::class,
+        ];
+    }
 
     public function endereco() {
         return $this->belongsTo(Endereco::class);

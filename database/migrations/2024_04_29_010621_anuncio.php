@@ -16,11 +16,12 @@ return new class extends Migration
             $table->softDeletes();
             $table->string('titulo', 80);
             $table->foreignId('endereco_id')->constrained()->onDelete('cascade');
+            $table->enum('status', ['ativo', 'inativo'])->default('inativo')->default('ativo');
             $table->string('capacidade', 50);
             $table->string('descricao', 100);
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->decimal('valor', 10);
-            $table->date('agenda');
+            $table->json('agenda')->nullable();
             $table->timestamps();
         });
     }

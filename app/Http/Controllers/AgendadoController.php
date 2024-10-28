@@ -112,12 +112,17 @@ class AgendadoController extends Controller
             $dataInicio = $validatedData['data_inicio'];
             $dataFim = $validatedData['data_fim'];
 
-            // Verifica a agenda do anúncio
             $anuncio = Anuncio::find($validatedData['anuncio_id']);
-            if ($dataInicio > $anuncio->agenda || $dataFim > $anuncio->agenda) {
+            $agenda = json_decode($anuncio->agenda, true) ?? [];
+
+            $datasIndisponiveis = collect($agenda)->map(function ($data) {
+                return date('Y-m-d', strtotime($data));
+            });
+
+            if ($datasIndisponiveis->contains($dataInicio) || $datasIndisponiveis->contains($dataFim)) {
                 return response()->json([
                     'status' => false,
-                    'message' => 'As datas da reserva estão fora da agenda do anúncio.',
+                    'message' => 'As datas selecionadas estão indisponíveis para reserva.',
                 ], 422);
             }
 
@@ -300,14 +305,6 @@ class AgendadoController extends Controller
             $dataInicio = $validatedData['data_inicio'];
             $dataFim = $validatedData['data_fim'];
 
-            $anuncio = Anuncio::find($validatedData['anuncio_id']);
-            if ($dataInicio > $anuncio->agenda || $dataFim > $anuncio->agenda) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'As datas da reserva estão fora da agenda do anúncio.',
-                ], 422);
-            }
-
             foreach ($request->servicoId as $servicoId) {
                 $servico = Servico::find($servicoId);
                 if ($dataInicio > $servico->agenda || $dataFim > $servico->agenda) {
@@ -327,7 +324,22 @@ class AgendadoController extends Controller
                     'error' => 'Você só pode editar esta reserva até 3 dias antes da data de início.'
             ], 403);
             }
+            
+            $anuncio = Anuncio::find($validatedData['anuncio_id']);
+            $agenda = json_decode($anuncio->agenda, true) ?? [];
 
+            $datasIndisponiveis = collect($agenda)->map(function ($data) {
+                return date('Y-m-d', strtotime($data));
+            });
+
+            if ($datasIndisponiveis->contains($dataInicio) || $datasIndisponiveis->contains($dataFim)) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'As datas selecionadas estão indisponíveis para reserva.',
+                ], 422);
+            }
+
+            // Verifica se há conflitos de data para o mesmo anúncio
             $conflict = Agendado::where('anuncio_id', $validatedData['anuncio_id'])
                 ->where('id', '!=', $id)
                 ->where(function ($query) use ($dataInicio, $dataFim) {
@@ -425,4 +437,21 @@ class AgendadoController extends Controller
             'message' => 'Reserva excluída com sucesso.',
         ], 200);
     }
+
+    public function verificarDisponibilidade(Request $request, $anuncio_id)
+    {
+        $data = $request->input('data');
+
+        // Verifica se a data já está reservada
+        $isReserved = Agendado::where('anuncio_id', $anuncio_id)
+            ->where('data_inicio', '<=', $data)
+            ->where('data_fim', '>=', $data)
+            ->exists();
+
+        return response()->json([
+            'status' => !$isReserved,
+        ]);
+    }
 }
+
+

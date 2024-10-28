@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middeleware\AdminAccess;
+use App\Http\Controllers\RecoverPasswordCodeController;
 use App\Http\Controllers\ServicoController;
 use App\Http\Controllers\AgendadoController;
 use App\Http\Controllers\AdminController;
@@ -14,6 +15,10 @@ Route::post('/register', [UserController::class, 'store']);
 Route::post('/login', [AuthController::class, 'login']);
 
 Route::get('/anuncios/noauth', [AnuncioController::class, 'indexNoAuth']);
+
+Route::post("/forgot-password-code", [RecoverPasswordCodeController::class, 'forgotPasswordCode']);
+Route::post("/reset-password-validade-code", [RecoverPasswordCodeController::class, 'resetPasswordValidateCode']);
+Route::post("/reset-password-code", [RecoverPasswordCodeController::class, 'resetPasswordCode']);
 
 // Rotas protegidas
 Route::middleware('auth:sanctum')->group(function () {
@@ -52,6 +57,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/agendados/{id}', [AgendadoController::class, 'show']);
     Route::put('/agendados/{id}', [AgendadoController::class, 'update']);
     Route::delete('/agendados/{id}', [AgendadoController::class, 'destroy']);
+
+    Route::get('/verifica-agenda/{anuncio_id}', [AgendadoController::class, 'verificarDisponibilidade']);
+
 });
 
 // Rotas protegidas para administradores
@@ -70,4 +78,5 @@ Route::middleware(['auth:sanctum', 'admin'])->group(function () {
     Route::delete('/admin/servicos/{id}', [AdminController::class, 'destroyServico']);
 
     Route::delete('/admin/anuncios/{id}', [AdminController::class, 'destroyAnuncio']);
+
 });
