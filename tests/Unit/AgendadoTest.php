@@ -40,7 +40,7 @@ test('incluir dados incompletos no formulario de reserva', function () {
         'capacidade' => 100,
         'descricao' => 'Um local perfeito para festas de casamento.',
         'valor' => 2000,
-        'agenda' => '2024-12-12',
+        'agenda' => ['data' => '2025-09-18'],
         'categoriaId' => [$categorias[0]->id, $categorias[1]->id],
         'imagens' => $imagens,
     ]);
@@ -94,7 +94,7 @@ test('criar uma reserva corretamente', function () {
         'capacidade' => 100,
         'descricao' => 'Um local perfeito para festas de casamento.',
         'valor' => 2000,
-        'agenda' => '2024-12-12',
+        'agenda' => ['data' => '2025-09-18'],
         'categoriaId' => [$categorias[0]->id, $categorias[1]->id],
         'imagens' => $imagens,
     ]);
@@ -151,7 +151,7 @@ test('atualizar reserva com sucesso', function () {
         'capacidade' => 100,
         'descricao' => 'Um local perfeito para festas de casamento.',
         'valor' => 2000,
-        'agenda' => '2024-12-12',
+        'agenda' => ['data' => '2025-09-18'],
         'categoriaId' => [$categorias[0]->id, $categorias[1]->id],
         'imagens' => $imagens,
     ]);
@@ -217,7 +217,7 @@ test('atualizar reserva sem sucesso', function () {
         'capacidade' => 100,
         'descricao' => 'Um local perfeito para festas de casamento.',
         'valor' => 2000,
-        'agenda' => '2024-12-12',
+        'agenda' => ['data' => '2025-09-18'],
         'categoriaId' => [$categorias[0]->id, $categorias[1]->id],
         'imagens' => $imagens,
     ]);
@@ -275,7 +275,7 @@ test('tentar editar reserva fora do prazo permitido', function () {
         'capacidade' => 100,
         'descricao' => 'Um local perfeito para festas de casamento.',
         'valor' => 2000,
-        'agenda' => '2024-12-12',
+        'agenda' => ['data' => '2025-09-18'],
         'categoriaId' => [$categorias[0]->id, $categorias[1]->id],
         'imagens' => $imagens,
     ]);
@@ -330,7 +330,7 @@ test('Pesquisar reserva futura', function () {
         'capacidade' => 100,
         'descricao' => 'Um local perfeito para festas de casamento.',
         'valor' => 2000,
-        'agenda' => '2024-12-12',
+        'agenda' => ['data' => '2025-09-18'],
         'categoriaId' => [$categorias[0]->id, $categorias[1]->id],
         'imagens' => $imagens,
     ]);
@@ -380,7 +380,7 @@ test('Pesquisar reserva passada', function () {
         'capacidade' => 100,
         'descricao' => 'Um local perfeito para festas de casamento.',
         'valor' => 2000,
-        'agenda' => '2024-12-12',
+        'agenda' => ['data' => '2025-09-18'],
         'categoriaId' => [$categorias[0]->id, $categorias[1]->id],
         'imagens' => $imagens,
     ]);
@@ -435,7 +435,7 @@ test('cancelar reserva com sucesso', function () {
         'capacidade' => 100,
         'descricao' => 'Um local perfeito para festas de casamento.',
         'valor' => 2000,
-        'agenda' => '2024-12-12',
+        'agenda' => ['data' => '2025-09-18'],
         'categoriaId' => [$categorias[0]->id, $categorias[1]->id],
         'imagens' => $imagens,
     ]);
@@ -491,7 +491,7 @@ test('tentar cancelar reserva fora do prazo permitido', function () {
         'capacidade' => 100,
         'descricao' => 'Um local perfeito para festas de casamento.',
         'valor' => 2000,
-        'agenda' => '2024-12-12',
+        'agenda' => ['data' => '2025-09-18'],
         'categoriaId' => [$categorias[0]->id, $categorias[1]->id],
         'imagens' => $imagens,
     ]);

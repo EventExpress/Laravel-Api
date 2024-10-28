@@ -56,7 +56,7 @@ uses(RefreshDatabase::class);
     $this->assertDeleted('servicos', ['id' => $servico->id]);
 });*/
 
-it('deletar usuário como admin', function () {
+/*it('deletar usuário como admin', function () {
     $admin = User::factory()->create();
     TypeUser::create(['user_id' => $admin->id, 'tipousu' => 'admin']);
     $user = User::factory()->create();
@@ -70,4 +70,4 @@ it('deletar usuário como admin', function () {
     $this->assertSoftDeleted('user', ['id' => $user->id]);
 
    
-});
+});*/

@@ -29,7 +29,9 @@ class AnuncioFactory extends Factory
             'descricao' => $this->faker->text(100),
             'user_id' => $usuario->id,
             'valor' => $this->faker->randomFloat(2, 10, 1000),
-            'agenda' => $this->faker->dateTimeBetween('now', '+1 year')->format('Y-m-d'),
+            //'agenda' => $this->faker->dateTimeBetween('now', '+1 year')->format('Y-m-d'),
+            'agenda' => json_encode(['data' => '2025-09-18']),
+            'status' => 'ativo',
         ];
     }
 

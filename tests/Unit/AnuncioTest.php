@@ -41,7 +41,7 @@ test('cadastro de novo anuncio com todos os campos corretamente', function () {
         'capacidade' => 100,
         'descricao' => 'Um local perfeito para festas de casamento.',
         'valor' => 2000,
-        'agenda' => '2024-12-12',
+        'agenda' => ['data' => '2025-09-18'],
         'categoriaId' => [$categorias[0]->id, $categorias[1]->id],
         'imagens' => $imagens,
         
@@ -79,7 +79,7 @@ test('preencher campos obrigatórios incorretamente', function () {
         'capacidade' => 100,
         'descricao' => 'Um local perfeito para festas de casamento.',
         'valor' => 2000,
-        'agenda' => '2024-12-12',
+        'agenda' => ['data' => '2025-09-18'],
         'categoriaId' =>[$categorias[0]->id, $categorias[1]->id],
         'imagens' => $imagens
     ]);
@@ -116,7 +116,7 @@ test('pesquisar anuncio com termos válidos', function () {
         'capacidade' => 100,
         'descricao' => 'Um local perfeito para festas de casamento.',
         'valor' => 2000,
-        'agenda' => '2024-12-12',
+        'agenda' => ['data' => '2025-09-18'],
         'categoriaId' => [$categorias[0]->id, $categorias[1]->id],
         'imagens' => $imagens
     ]);
@@ -157,7 +157,7 @@ test('tentar pesquisar anuncio com termos inválidos', function () {
         'capacidade' => 100,
         'descricao' => 'Um local perfeito para festas de casamento.',
         'valor' => 2000,
-        'agenda' => '2024-12-12',
+        'agenda' => ['data' => '2025-09-18'],
         'categoriaId' => [1, 2],
         'imagens' => $imagens
     ]);
@@ -193,7 +193,7 @@ test('pesquisar todos os anuncios', function () {
         'capacidade' => 100,
         'descricao' => 'Um local perfeito para festas de casamento.',
         'valor' => 2000,
-        'agenda' => '2024-12-12',
+        'agenda' => ['data' => '2025-09-18'],
         'categoriaId' => [$categorias[0]->id, $categorias[1]->id],
         'imagens' => $imagens
     ]);
@@ -207,7 +207,7 @@ test('pesquisar todos os anuncios', function () {
         'capacidade' => 200,
         'descricao' => 'Um local perfeito para festas de aniversário.',
         'valor' => 3000,
-        'agenda' => '2025-12-12',
+        'agenda' => ['data' => '2025-09-18'],
         'categoriaId' => [$categorias[0]->id, $categorias[1]->id],
         'imagens' => $imagens
     ]);
@@ -244,7 +244,7 @@ test('pesquisar por anuncio especifico', function () {
         'capacidade' => 100,
         'descricao' => 'Um local perfeito para festas de casamento.',
         'valor' => 2000,
-        'agenda' => '2024-12-12',
+        'agenda' => ['data' => '2025-09-18'],
         'categoriaId' => [$categorias[0]->id, $categorias[1]->id],
         'imagens' => $imagens
     ]);
@@ -258,7 +258,7 @@ test('pesquisar por anuncio especifico', function () {
         'capacidade' => 200,
         'descricao' => 'Um local perfeito para festas de aniversário.',
         'valor' => 3000,
-        'agenda' => '2025-12-12',
+        'agenda' => ['data' => '2025-09-18'],
         'categoriaId' => [$categorias[0]->id, $categorias[1]->id],
         'imagens' => $imagens
     ]);
@@ -295,7 +295,7 @@ test('tentar pesquisar por anuncio inexistente', function () {
         'capacidade' => 100,
         'descricao' => 'Um local perfeito para festas de casamento.',
         'valor' => 2000,
-        'agenda' => '2024-12-12',
+        'agenda' => ['data' => '2025-09-18'],
         'categoriaId' => [$categorias[0]->id, $categorias[1]->id],
         'imagens' => $imagens
     ]);
@@ -309,7 +309,7 @@ test('tentar pesquisar por anuncio inexistente', function () {
         'capacidade' => 200,
         'descricao' => 'Um local perfeito para festas de aniversário.',
         'valor' => 3000,
-        'agenda' => '2025-12-12',
+        'agenda' => ['data' => '2025-09-18'],
         'categoriaId' => [1,2],
         'imagens' => $imagens
     ]);
@@ -346,7 +346,6 @@ test('alterar anuncio com sucesso', function () {
         'capacidade' => 50,
         'descricao' => 'Local ideal para festas de aniversário.',
         'valor' => 1500,
-        'agenda' => '2024-11-10',
     ]);
 
     // Atualiza o anúncio com os campos de endereço diretamente no payload
@@ -359,7 +358,6 @@ test('alterar anuncio com sucesso', function () {
         'capacidade' => 100,
         'descricao' => 'Local perfeito para festas de casamento.',
         'valor' => 2000,
-        'agenda' => '2024-12-12',
         'categoriaId' => [$categorias[0]->id, $categorias[1]->id],
     ]);
 
@@ -397,7 +395,6 @@ test('alterar anuncio sem sucesso', function () {
         'capacidade' => 50,
         'descricao' => 'Local ideal para festas de aniversário.',
         'valor' => 1500,
-        'agenda' => '2024-11-10',
     ]);
 
     // Salvar as imagens separadamente
@@ -419,7 +416,6 @@ test('alterar anuncio sem sucesso', function () {
         'capacidade' => 100,
         'descricao' => 'Local perfeito para festas de casamento.',
         'valor' => 2000,
-        'agenda' => '2024-12-12',
         'categoriaId' => [$categorias[0]->id, $categorias[1]->id],
         'imagens' => $imagens
     ]);
@@ -456,7 +452,6 @@ test('excluir anuncio com sucesso', function () {
         'capacidade' => 50,
         'descricao' => 'Local ideal para festas de aniversário.',
         'valor' => 1500,
-        'agenda' => '2024-11-10',
     ]);
 
     $response = $this->deleteJson("/api/anuncios/{$anuncio->id}");
