@@ -63,7 +63,8 @@ class ServicoController extends Controller
             'bairro' => 'required|string|min:3|max:255',
             'descricao' => 'required|string|min:10|max:2000',
             'valor' => 'required|numeric|min:0',
-            'agenda' => 'required|date',
+            'agenda' => 'nullable|array',
+            'agenda.*' => 'date',
         ]);
         
         $servico = new Servico();
@@ -74,6 +75,13 @@ class ServicoController extends Controller
         $servico->descricao = $validatedData['descricao'];
         $servico->valor = $validatedData['valor'];
         $servico->agenda = $validatedData['agenda'];
+
+        if (!empty($validatedData['agenda'])) {
+            $servico->agenda = json_encode($validatedData['agenda']);
+        } else {
+            $servico->agenda = json_encode([]);
+        }
+
         $servico->save();
 
         if (!$servico) {
@@ -134,6 +142,7 @@ class ServicoController extends Controller
             'cidade' => 'required|string|min:3|max:255',
             'bairro' => 'required|string|min:3|max:255',
             'descricao' => 'required|string|min:10|max:2000',
+            'agenda' => 'nullable|array',
         ]);
 
         $user = Auth::user();
@@ -151,6 +160,7 @@ class ServicoController extends Controller
             'descricao' => $validatedData['descricao'],
             'cidade' => $validatedData['cidade'],
             'bairro' => $validatedData['bairro'],
+            'agenda' => $validatedData['agenda'] ,
         ]);
 
         return response()->json([

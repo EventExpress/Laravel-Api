@@ -20,7 +20,7 @@ return new class extends Migration
             $table->decimal('valor', 10);
             $table->string('cidade', 50);
             $table->string('bairro', 50);
-            $table->date('agenda');
+            $table->json('agenda')->nullable();
             $table->timestamps();
         });
     }

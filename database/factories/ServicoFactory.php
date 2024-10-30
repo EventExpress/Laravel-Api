@@ -29,7 +29,7 @@ class ServicoFactory extends Factory
             'descricao'=> $this->faker->text(30),
             'user_id'=>$user->id,
             'valor'=> $this->faker->randomFloat(2, 10, 1000),
-            'agenda' => '2024-12-12',
+            'agenda' => json_encode(['data' => '2025-09-18']),
         ];
     }
 }

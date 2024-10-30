@@ -23,7 +23,7 @@ test('cadastro de novo servico com todos os campos corretamente', function () {
         'bairro' => 'Centro',
         'descricao' => 'Limpeza geral de casa.',
         'valor' => 150,
-        'agenda' => '2024-10-15',
+        'agenda' => ['data' => '2025-09-18'],
     ]);
 
     $response->assertStatus(201);
@@ -99,7 +99,6 @@ test('alterar servico com sucesso', function () {
         'bairro' => 'Centro',
         'descricao' => 'Limpeza geral de casa.',
         'valor' => 150,
-        'agenda' => '2024-10-15',
     ]);
 
     $response = $this->putJson("/api/servicos/{$servico->id}", [
@@ -108,7 +107,7 @@ test('alterar servico com sucesso', function () {
         'bairro' => 'Centro',
         'descricao' => 'Manutenção geral.',
         'valor' => 200,
-        'agenda' => '2024-11-15',
+        'agenda' => ['data' => '2025-10-18'],
     ]);
 
     $response->assertStatus(200)
@@ -128,7 +127,6 @@ test('alterar servico com campo vazio', function () {
         'bairro' => 'Centro',
         'descricao' => 'Limpeza geral de casa.',
         'valor' => 150,
-        'agenda' => '2024-10-15',
     ]);
 
     $response = $this->putJson("/api/servicos/{$servico->id}", [
@@ -137,7 +135,7 @@ test('alterar servico com campo vazio', function () {
         'bairro' => 'Centro',
         'descricao' => 'Manutenção geral.',
         'valor' => 200,
-        'agenda' => '2024-11-15',
+        'agenda' => ['data' => '2025-10-18'],
     ]);
 
     $response->assertStatus(422);

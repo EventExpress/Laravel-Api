@@ -126,14 +126,19 @@ class AgendadoController extends Controller
                 ], 422);
             }
 
-            // Verifica a agenda dos serviços selecionados
             if ($request->has('servicoId') && is_array($request->servicoId)) {
                 foreach ($request->servicoId as $servicoId) {
                     $servico = Servico::find($servicoId);
-                    if ($dataInicio > $servico->agenda || $dataFim > $servico->agenda) {
+         
+                    $agendaServico = json_decode($servico->agenda, true) ?? [];
+                    $datasIndisponiveisServico = collect($agendaServico)->map(function ($data) {
+                        return date('Y-m-d', strtotime($data));
+                    });
+            
+                    if ($datasIndisponiveisServico->contains($dataInicio) || $datasIndisponiveisServico->contains($dataFim)) {
                         return response()->json([
                             'status' => false,
-                            'message' => "As datas da reserva estão fora da agenda do serviço.",
+                            'message' => "As datas selecionadas estão indisponíveis para o serviço.",
                         ], 422);
                     }
                 }
