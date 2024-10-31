@@ -128,20 +128,21 @@ class AgendadoController extends Controller
             if ($request->has('servicoId') && is_array($request->servicoId)) {
                 foreach ($request->servicoId as $servicoId) {
                     $servico = Servico::find($servicoId);
+                    if ($servico) {
+                        $servicoAgenda = json_decode($servico->agenda, true) ?? [];
+                        $servicoDatasIndisponiveis = collect($servicoAgenda)->map(function ($data) {
+                            return date('Y-m-d', strtotime($data));
+                        });
 
-                    $agendaServico = json_decode($servico->agenda, true) ?? [];
-                    $datasIndisponiveisServico = collect($agendaServico)->map(function ($data) {
-                        return date('Y-m-d', strtotime($data));
-                    });           
-                    if ($datasIndisponiveisServico->contains($dataInicio) || $datasIndisponiveisServico->contains($dataFim)) {
-                        return response()->json([
-                            'status' => false,
-                            'message' => "As datas selecionadas estão indisponíveis para o serviço.",
-                        ], 422);
+                        if ($servicoDatasIndisponiveis->contains($dataInicio) || $servicoDatasIndisponiveis->contains($dataFim)) {
+                            return response()->json([
+                                'status' => false,
+                                'message' => "As datas da reserva estão fora da agenda do serviço ID: $servicoId.",
+                            ], 422);
+                        }
                     }
                 }
             }
-
             // Conflito de datas
             $conflict = Agendado::where('anuncio_id', $anuncio_id) // Usando $anuncio_id diretamente
             ->where(function ($query) use ($dataInicio, $dataFim) {
@@ -193,21 +194,14 @@ class AgendadoController extends Controller
                 'agendado' => $agendado,
             ], 201);
 
-            } catch (\Illuminate\Validation\ValidationException $e) {
-                return response()->json([
-                    'status' => false,
-                    'errors' => $e->errors(),
-                ], 422);
-
-            } catch (\Exception $e) {
-                DB::rollBack();
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Erro ao criar a reserva: ' . $e->getMessage(),
-                ], 500);
-            }
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'status' => false,
+                'message' => 'Erro ao criar a reserva: ' . $e->getMessage(),
+            ], 500);
+        }
     }
-
 
     public function show(Request $request)
     {
@@ -326,7 +320,7 @@ class AgendadoController extends Controller
                     'error' => 'Você só pode editar esta reserva até 3 dias antes da data de início.'
             ], 403);
             }
-            
+
             $anuncio = Anuncio::findOrFail($agendado->anuncio_id);
             $agenda = json_decode($anuncio->agenda, true) ?? [];
             $datasIndisponiveis = collect($agenda)->map(fn($data) => date('Y-m-d', strtotime($data)));
@@ -352,7 +346,7 @@ class AgendadoController extends Controller
 
             $agendado->servico()->sync($validatedData['servicoId']);
 
-            DB::commit(); 
+            DB::commit();
 
 
             return response()->json([
