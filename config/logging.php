@@ -77,7 +77,7 @@ return [
             'level' => 'debug',
         ],
 
-        'agendados' => [
+        'logagendados' => [
             'driver' => 'single',
             'path' => storage_path('logs/agendado.log'),
             'level' => 'debug',

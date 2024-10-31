@@ -207,6 +207,7 @@ class AnuncioController extends Controller
             $user = Auth::user();
             $anuncio = Anuncio::find($id);
 
+            // Verifica se o anúncio existe e se o usuário é o criador
             if (!$anuncio || $anuncio->user_id != $user->id) {
                 return response()->json([
                     'status' => false,
@@ -242,7 +243,6 @@ class AnuncioController extends Controller
                 }
             }
 
-            // Sincroniza categorias apenas se a categoriaId estiver presente
             if (isset($validatedData['categoriaId'])) {
                 $anuncio->categorias()->sync($validatedData['categoriaId']);
             }
@@ -285,6 +285,7 @@ class AnuncioController extends Controller
             ], 500);
         }
     }
+
 
 
     public function destroy($id)
