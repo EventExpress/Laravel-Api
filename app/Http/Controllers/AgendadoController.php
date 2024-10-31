@@ -269,7 +269,6 @@ class AgendadoController extends Controller
         DB::beginTransaction();
 
         try {
-            // Validação dos dados de entrada
             $validatedData = $request->validate([
                 'servicoId' => 'nullable|array',
                 'formapagamento' => 'sometimes|required|string|max:50',
@@ -280,7 +279,6 @@ class AgendadoController extends Controller
             $user = Auth::user();
             $agendado = Agendado::findOrFail($id);
 
-            // Verifica a permissão do usuário
             if ($agendado->user_id !== $user->id) {
                 return response()->json([
                     'status' => false,
@@ -288,23 +286,20 @@ class AgendadoController extends Controller
                 ], 403);
             }
 
-            // Atualiza somente os campos que foram enviados na requisição
-            if (isset($validatedData['data_inicio'])) {
+            if (array_key_exists('data_inicio', $validatedData)) {
                 $agendado->data_inicio = $validatedData['data_inicio'];
             }
-            if (isset($validatedData['data_fim'])) {
+            if (array_key_exists('data_fim', $validatedData)) {
                 $agendado->data_fim = $validatedData['data_fim'];
             }
-            if (isset($validatedData['formapagamento'])) {
+            if (array_key_exists('formapagamento', $validatedData)) {
                 $agendado->formapagamento = $validatedData['formapagamento'];
             }
 
-            // Checa disponibilidade de datas no anúncio
             $anuncio = Anuncio::findOrFail($agendado->anuncio_id);
             $agenda = json_decode($anuncio->agenda, true) ?? [];
             $datasIndisponiveis = collect($agenda)->map(fn($data) => date('Y-m-d', strtotime($data)));
 
-            // Verifica se as datas de início e fim estão indisponíveis
             if ($datasIndisponiveis->contains($agendado->data_inicio) || $datasIndisponiveis->contains($agendado->data_fim)) {
                 return response()->json([
                     'status' => false,
@@ -312,25 +307,19 @@ class AgendadoController extends Controller
                 ], 422);
             }
 
-            // Salva a reserva com os novos dados
-            if ($agendado->save()) {
-                // Sincroniza serviços, se foram passados
-                if ($request->has('servicoId') && is_array($request->servicoId)) {
-                    $agendado->servico()->sync($validatedData['servicoId']);
-                }
+            $agendado->save();
 
-                DB::commit();
-                return response()->json([
-                    'status' => true,
-                    'message' => 'Reserva atualizada com sucesso.',
-                    'agendado' => $agendado,
-                ], 200);
-            } else {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Falha ao atualizar a reserva.',
-                ], 500);
+            if ($request->has('servicoId') && is_array($request->servicoId)) {
+                $agendado->servico()->sync($validatedData['servicoId']);
             }
+
+            DB::commit();
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Reserva atualizada com sucesso.',
+                'agendado' => $agendado,
+            ], 200);
 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -340,6 +329,7 @@ class AgendadoController extends Controller
             ], 500);
         }
     }
+
 
     public function destroy($id)
     {
