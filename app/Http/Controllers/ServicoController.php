@@ -9,7 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class ServicoController extends Controller
-{   
+{
     public function index()
     {
         $servicos = Servico::all();
@@ -19,7 +19,7 @@ class ServicoController extends Controller
             'servicos' => $servicos,
         ], 200);
     }
-    
+
     public function meusServicos()
     {
         $user = Auth::user();
@@ -29,7 +29,7 @@ class ServicoController extends Controller
                 'error' => 'Você não tem permissão para criar serviços.'
             ], 403);
         }
-    
+
         $user_id = $user->id;
         $servicos = Servico::where('usuario_id', $user_id)->get();
         return response()->json([
@@ -66,7 +66,7 @@ class ServicoController extends Controller
             'agenda' => 'nullable|array',
             'agenda.*' => 'date',
         ]);
-        
+
         $servico = new Servico();
         $servico->user_id = Auth::id();
         $servico->titulo = $validatedData['titulo'];
@@ -102,7 +102,7 @@ class ServicoController extends Controller
     {
         $search = $request->input('search');
 
-            $servico = Servico::where('titulo','like',"%$search%") 
+            $servico = Servico::where('titulo','like',"%$search%")
                 ->orwhere('cidade', 'like', "%$search%")
                 ->orWhere('bairro', 'like', "%$search%")
                 ->orWhere('descricao', 'like', "%$search%")
@@ -138,10 +138,10 @@ class ServicoController extends Controller
     public function update(Request $request, $id)
     {
         $validatedData = $request->validate([
-            'titulo' => 'required|string|min:4|max:255',
-            'cidade' => 'required|string|min:3|max:255',
-            'bairro' => 'required|string|min:3|max:255',
-            'descricao' => 'required|string|min:10|max:2000',
+            'titulo' => 'sometimes|required|string|min:4|max:255',
+            'cidade' => 'sometimes|required|string|min:3|max:255',
+            'bairro' => 'sometimes|required|string|min:3|max:255',
+            'descricao' => 'sometimes|required|string|min:10|max:2000',
             'agenda' => 'nullable|array',
         ]);
 
@@ -155,13 +155,15 @@ class ServicoController extends Controller
             ], 403);
         }
 
-        $servico->update([
-            'titulo' => $validatedData['titulo'],
-            'descricao' => $validatedData['descricao'],
-            'cidade' => $validatedData['cidade'],
-            'bairro' => $validatedData['bairro'],
-            'agenda' => $validatedData['agenda'] ,
-        ]);
+        $servico->update(array_filter([
+            'titulo' => $validatedData['titulo'] ?? null,
+            'descricao' => $validatedData['descricao'] ?? null,
+            'cidade' => $validatedData['cidade'] ?? null,
+            'bairro' => $validatedData['bairro'] ?? null,
+            'agenda' => $validatedData['agenda'] ?? null,
+        ], function ($value) {
+            return !is_null($value);
+        }));
 
         return response()->json([
             'status' => true,
