@@ -144,7 +144,7 @@ class AgendadoController extends Controller
                 }
             }
             // Conflito de datas
-            $conflict = Agendado::where('anuncio_id', $anuncio_id) // Usando $anuncio_id diretamente
+            $conflict = Agendado::where('anuncio_id', $anuncio_id)
             ->where(function ($query) use ($dataInicio, $dataFim) {
                 $query->where('data_inicio', '<=', $dataFim)
                     ->where('data_fim', '>=', $dataInicio);
@@ -301,9 +301,12 @@ class AgendadoController extends Controller
                 $agendado->formapagamento = $validatedData['formapagamento'];
             }
 
-            foreach ($request->servicoId as $servicoId) {
-                $servico = Servico::find($servicoId);
-                if ($dataInicio > $servico->agenda || $dataFim > $servico->agenda) {
+            foreach ($validatedData['servicoId'] ?? [] as $servicoId) {
+                $servico = Servico::findOrFail($servicoId);
+                $dataInicio = $agendado->data_inicio;
+                $dataFim = $agendado->data_fim;
+
+                if ($dataInicio < $servico->agenda[0] || $dataFim > $servico->agenda[count($servico->agenda) - 1]) {
                     return response()->json([
                         'status' => false,
                         'message' => "As datas da reserva estão fora da agenda do serviço.",
@@ -312,13 +315,11 @@ class AgendadoController extends Controller
             }
 
             $dataAtual = now();
-            $dataInicio = $agendado->data_inicio;
-
-            if ($dataAtual->diffInDays($dataInicio, false) < 3) {
+            if ($dataAtual->diffInDays($agendado->data_inicio, false) < 3) {
                 return response()->json([
                     'status' => false,
-                    'error' => 'Você só pode editar esta reserva até 3 dias antes da data de início.'
-            ], 403);
+                    'error' => 'Você só pode editar esta reserva até 3 dias antes da data de início.',
+                ], 403);
             }
 
             $anuncio = Anuncio::findOrFail($agendado->anuncio_id);
@@ -338,16 +339,7 @@ class AgendadoController extends Controller
                 $agendado->servico()->sync($validatedData['servicoId']);
             }
 
-            $agendado->update([
-                'anuncio_id' => $validatedData['anuncio_id'],
-                'data_inicio' => $dataInicio,
-                'data_fim' => $dataFim,
-            ]);
-
-            $agendado->servico()->sync($validatedData['servicoId']);
-
             DB::commit();
-
 
             return response()->json([
                 'status' => true,
@@ -355,21 +347,20 @@ class AgendadoController extends Controller
                 'agendado' => $agendado,
             ], 200);
 
-            } catch (\Illuminate\Validation\ValidationException $e) {
-                return response()->json([
-                    'status' => false,
-                    'errors' => $e->errors(),
-                ], 422);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'status' => false,
+                'errors' => $e->errors(),
+            ], 422);
 
-            } catch (\Exception $e) {
-                DB::rollBack();
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Erro ao atualizar a reserva: ' . $e->getMessage(),
-                ], 500);
-            }
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'status' => false,
+                'message' => 'Erro ao atualizar a reserva: ' . $e->getMessage(),
+            ], 500);
         }
-
+    }
 
     public function destroy($id)
     {
@@ -414,20 +405,6 @@ class AgendadoController extends Controller
         ], 200);
     }
 
-    public function verificarDisponibilidade(Request $request, $anuncio_id)
-    {
-        $data = $request->input('data');
-
-        // Verifica se a data já está reservada
-        $isReserved = Agendado::where('anuncio_id', $anuncio_id)
-            ->where('data_inicio', '<=', $data)
-            ->where('data_fim', '>=', $data)
-            ->exists();
-
-        return response()->json([
-            'status' => !$isReserved,
-        ]);
-    }
 }
 
 

@@ -286,6 +286,51 @@ class AnuncioController extends Controller
         }
     }
 
+    public function getUnavailableDates($id)
+    {
+        // Encontra o anúncio pelo ID
+        $anuncio = Anuncio::find($id);
+
+        // Verifica se o anúncio existe
+        if (!$anuncio) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Anúncio não encontrado.'
+            ], 404);
+        }
+
+        // Decodifica o campo 'agenda' do anúncio
+        $unavailableDates = json_decode($anuncio->agenda, true);
+
+        // Retorna as datas indisponíveis
+        return response()->json([
+            'status' => true,
+            'unavailable_dates' => $unavailableDates,
+        ], 200);
+    }
+
+    public function verificarDisponibilidade ($id)
+    {
+        // Encontra o anúncio pelo ID
+        $anuncio = Anuncio::find($id);
+
+        // Verifica se o anúncio existe
+        if (!$anuncio) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Anúncio não encontrado.'
+            ], 404);
+        }
+
+        // Decodifica o campo 'agenda' do anúncio
+        $unavailableDates = json_decode($anuncio->agenda, true);
+
+        // Retorna as datas indisponíveis
+        return response()->json([
+            'status' => true,
+            'unavailable_dates' => $unavailableDates,
+        ], 200);
+    }
 
 
     public function destroy($id)

@@ -21,6 +21,21 @@ class Agendado extends Model
         'data_fim',
     ];
 
+
+
+    protected static function booted()
+    {
+        static::created(function ($agendado) {
+            $agendado->refresh();
+
+            Comprovante::create([
+                'user_id' => $agendado->user_id,
+                'anuncios_id' => $agendado->anuncio_id,
+                'servicos_id' => $agendado->servico->first()->id ?? null, // Usa o primeiro serviço, se houver
+            ]);
+        });
+    }
+
     public function anuncio()
     {
         return $this->belongsTo(Anuncio::class);
