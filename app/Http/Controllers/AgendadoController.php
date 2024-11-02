@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Comprovante;
 use App\Models\User;
 use App\Models\Agendado;
 use App\Models\Servico;
@@ -143,12 +144,13 @@ class AgendadoController extends Controller
                     }
                 }
             }
+
             // Conflito de datas
             $conflict = Agendado::where('anuncio_id', $anuncio_id)
-            ->where(function ($query) use ($dataInicio, $dataFim) {
-                $query->where('data_inicio', '<=', $dataFim)
-                    ->where('data_fim', '>=', $dataInicio);
-            })
+                ->where(function ($query) use ($dataInicio, $dataFim) {
+                    $query->where('data_inicio', '<=', $dataFim)
+                        ->where('data_fim', '>=', $dataInicio);
+                })
                 ->exists();
 
             if ($conflict) {
@@ -178,6 +180,8 @@ class AgendadoController extends Controller
                 $agendado->servico()->attach($validatedData['servicoId']);
             }
 
+            $this->createComprovante($agendado);
+
             DB::commit();
 
             Log::channel('logagendados')->info('Reserva criada com sucesso', [
@@ -201,6 +205,17 @@ class AgendadoController extends Controller
                 'message' => 'Erro ao criar a reserva: ' . $e->getMessage(),
             ], 500);
         }
+    }
+
+    protected function createComprovante(Agendado $agendado)
+    {
+        $servicoId = $agendado->servico->first()->id ?? null;
+
+        return Comprovante::create([
+            'user_id' => $agendado->user_id,
+            'anuncios_id' => $agendado->anuncio_id,
+            'servicos_id' => $servicoId,
+        ]);
     }
 
     public function show(Request $request)
