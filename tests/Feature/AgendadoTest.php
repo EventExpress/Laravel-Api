@@ -30,15 +30,14 @@ it('impede reserva para datas já ocupadas', function () {
     Agendado::create([
         'user_id' => $user->id,
         'anuncio_id' => $anuncio->id,
-        'formapagamento' => 'cartao',
+        'formapagamento' => 'pix',
         'data_inicio' => '2024-10-16',
         'data_fim' => '2024-10-18',
     ]);
 
     // Faz a requisição POST para tentar criar uma nova reserva nas mesmas datas
-    $response = $this->postJson('/api/agendados', [
-        'anuncio_id' => $anuncio->id,
-        'formapagamento' => 'cartao',
+    $response = $this->postJson("/api/agendados/{$anuncio->id}", [
+        'formapagamento' => 'pix',
         'data_inicio' => '2024-10-16',
         'data_fim' => '2024-10-18',
     ]);
@@ -47,18 +46,15 @@ it('impede reserva para datas já ocupadas', function () {
 });
 
 it('tenta concluir a reserva sem internet e retorna mensagem de erro', function () {
-    // Cria um usuário e autentica
     $user = User::factory()->create();
     $this->actingAs($user);
 
-    // Cria um anúncio
     $anuncio = Anuncio::factory()->create();
 
-    // Cria uma reserva existente
     $agendado = Agendado::create([
         'user_id' => $user->id,
         'anuncio_id' => $anuncio->id,
-        'formapagamento' => 'cartao',
+        'formapagamento' => 'pix',
         'data_inicio' => '2024-10-16',
         'data_fim' => '2024-10-18',
     ]);
@@ -70,9 +66,8 @@ it('tenta concluir a reserva sem internet e retorna mensagem de erro', function 
     });
 
     // Faz a requisição POST para tentar criar uma nova reserva
-    $response = $this->postJson('/api/agendados', [
-        'anuncio_id' => $anuncio->id,
-        'formapagamento' => 'cartao',
+    $response = $this->postJson("/api/agendados/{$anuncio->id}", [
+        'formapagamento' => 'pix',
         'data_inicio' => '2024-10-16',
         'data_fim' => '2024-10-18',
     ]);
@@ -115,10 +110,9 @@ it('Pesquisar reserva inexistente', function () {
     $anuncio = Anuncio::latest()->first();
     $servico = Servico::factory()->create();
 
-    $response = $this->postJson('/api/agendados', [
-        'servico_id' => [$servico->id],
-        'anuncio_id' => $anuncio->id,
-        'formapagamento' => 'dinheiro',
+    $response = $this->postJson("/api/agendados/{$anuncio->id}", [
+        'servicoId' => [$servico->id],
+        'formapagamento' => 'pix',
         'data_inicio' => '2023-10-10', 
         'data_fim' => '2023-11-10',    
     ]);
@@ -138,9 +132,6 @@ it('Pesquisar reserva inexistente', function () {
              ]);
 });
 
-
-
-
 it('alterar sem estar logado exibe mensagem de erro', function () {
     $user = User::factory()->create();
     $locador = User::factory()->create();
@@ -156,7 +147,7 @@ it('alterar sem estar logado exibe mensagem de erro', function () {
     $agendado = Agendado::factory()->create([
         'user_id' => $user->id,
         'anuncio_id' => $anuncio->id,
-        'formapagamento' => 'dinheiro',
+        'formapagamento' => 'pix',
         'data_inicio' => '2024-11-10',
         'data_fim' => '2024-12-10',
     ]);
@@ -195,7 +186,7 @@ it('Excluir sem estar logado exibe mensagem de erro', function () {
     $agendado = Agendado::factory()->create([
         'user_id' => $user->id,
         'anuncio_id' => $anuncio->id,
-        'formapagamento' => 'dinheiro',
+        'formapagamento' => 'pix',
         'data_inicio' => '2024-11-10',
         'data_fim' => '2024-12-10',
     ]);

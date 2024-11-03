@@ -307,18 +307,26 @@ class AgendadoController extends Controller
                 $agendado->formapagamento = $validatedData['formapagamento'];
             }
 
-            foreach ($request->servicoId as $servicoId) {
-                $servico = Servico::find($servicoId);
-                if ($dataInicio > $servico->agenda || $dataFim > $servico->agenda) {
-                    return response()->json([
-                        'status' => false,
-                        'message' => "As datas da reserva estão fora da agenda do serviço.",
-                    ], 422);
+            $dataInicio = $agendado->data_inicio;
+            $dataFim = $agendado->data_fim;
+
+            if ($request->has('servicoId') && is_array($request->servicoId)) {
+                foreach ($request->servicoId as $servicoId) {
+                    $servico = Servico::find($servicoId);
+
+                    $agendaServico = json_decode($servico->agenda, true) ?? [];
+                    $datasIndisponiveisServico = collect($agendaServico)->map(fn($data) => date('Y-m-d', strtotime($data)));
+
+                    if ($datasIndisponiveisServico->contains($dataInicio) || $datasIndisponiveisServico->contains($dataFim)) {
+                        return response()->json([
+                            'status' => false,
+                            'message' => "As datas selecionadas estão indisponíveis para o serviço.",
+                        ], 422);
+                    }
                 }
             }
 
             $dataAtual = now();
-            $dataInicio = $agendado->data_inicio;
 
             if ($dataAtual->diffInDays($dataInicio, false) < 3) {
                 return response()->json([
@@ -343,14 +351,6 @@ class AgendadoController extends Controller
             if ($request->has('servicoId') && is_array($request->servicoId)) {
                 $agendado->servico()->sync($validatedData['servicoId']);
             }
-
-            $agendado->update([
-                'anuncio_id' => $validatedData['anuncio_id'],
-                'data_inicio' => $dataInicio,
-                'data_fim' => $dataFim,
-            ]);
-
-            $agendado->servico()->sync($validatedData['servicoId']);
 
             DB::commit(); 
 

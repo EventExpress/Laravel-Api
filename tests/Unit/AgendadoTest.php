@@ -17,14 +17,14 @@ uses(TestCase::class, RefreshDatabase::class);
 test('incluir dados incompletos no formulario de reserva', function () {
     $user = User::factory()->create();
 
-    $this->actingAs($user);
+    Sanctum::actingAs($user);
 
     $locador = User::factory()->create();
 
     $this->seed(CategoriaSeeder::class);
 
     $categorias = Categoria::all();
-    
+
     $imagens = [
         base64_encode(UploadedFile::fake()->image('imagem1.jpg')->getContent()),
         base64_encode(UploadedFile::fake()->image('imagem2.jpg')->getContent()),
@@ -53,13 +53,11 @@ test('incluir dados incompletos no formulario de reserva', function () {
 
     $anuncio = Anuncio::latest()->first();
 
-
     $servico = Servico::factory()->create();
-    
-    $response = $this->postJson('/api/agendados', [
-        'servico_id' => [$servico->id],
-        'anuncio_id' => $anuncio->id,
-        'formapagamento' => '',//campo vazio
+
+    $response = $this->postJson("/api/agendados/{$anuncio->id}", [
+        'servicoId' => [$servico->id], // Corrigido para o nome esperado pelo controller
+        'formapagamento' => '', // campo vazio
         'data_inicio' => '2024-11-10',
         'data_fim' => '2024-12-10',
     ]);
@@ -71,7 +69,7 @@ test('incluir dados incompletos no formulario de reserva', function () {
 test('criar uma reserva corretamente', function () {
     $user = User::factory()->create();
 
-    $this->actingAs($user);
+    Sanctum::actingAs($user);
 
     $locador = User::factory()->create();
 
@@ -110,10 +108,9 @@ test('criar uma reserva corretamente', function () {
 
     $servico = Servico::factory()->create();
 
-    $response = $this->postJson('/api/agendados', [
-        'servico_id' => [$servico->id],
-        'anuncio_id' => $anuncio->id,
-        'formapagamento' => 'dinheiro',
+    $response = $this->postJson("/api/agendados/{$anuncio->id}", [
+        'servicoId' => [$servico->id],
+        'formapagamento' => 'pix',
         'data_inicio' => '2024-11-10',
         'data_fim' => '2024-12-10',
     ]);
@@ -128,7 +125,7 @@ test('criar uma reserva corretamente', function () {
 test('atualizar reserva com sucesso', function () {
     $user = User::factory()->create();
 
-    $this->actingAs($user);
+    Sanctum::actingAs($user);
 
     $locador = User::factory()->create();
 
@@ -160,10 +157,9 @@ test('atualizar reserva com sucesso', function () {
 
     $servico = Servico::factory()->create();
 
-    $response = $this->postJson('/api/agendados', [
-        'servico_id' => [$servico->id],
-        'anuncio_id' => $anuncio->id,
-        'formapagamento' => 'dinheiro',
+    $response = $this->postJson("/api/agendados/{$anuncio->id}", [
+        'servicoId' => [$servico->id],
+        'formapagamento' => 'pix',
         'data_inicio' => '2024-11-10',
         'data_fim' => '2024-12-10',
     ]);
@@ -177,11 +173,10 @@ test('atualizar reserva com sucesso', function () {
     $agendado = Agendado::latest()->first();
 
     $response = $this->putJson("/api/agendados/{$agendado->id}", [
-        'anuncio_id' => $anuncio->id,
         'data_inicio' => '2024-11-20',
         'data_fim' => '2024-12-11',
         'servicoId' => [$servico->id],
-        'formapagamento' => 'cartao',
+        'formapagamento' => 'pix',
     ]);
 
     $response->assertStatus(200)
@@ -194,7 +189,7 @@ test('atualizar reserva com sucesso', function () {
 test('atualizar reserva sem sucesso', function () {
     $user = User::factory()->create();
 
-    $this->actingAs($user);
+    Sanctum::actingAs($user);
 
     $locador = User::factory()->create();
 
@@ -226,10 +221,9 @@ test('atualizar reserva sem sucesso', function () {
 
     $servico = Servico::factory()->create();
 
-    $response = $this->postJson('/api/agendados', [
-        'servico_id' => [$servico->id],
-        'anuncio_id' => $anuncio->id,
-        'formapagamento' => 'dinheiro',
+    $response = $this->postJson("/api/agendados/{$anuncio->id}", [
+        'servicoId' => [$servico->id],
+        'formapagamento' => 'pix',
         'data_inicio' => '2024-11-10',
         'data_fim' => '2024-12-10',
     ]);
@@ -243,7 +237,7 @@ test('atualizar reserva sem sucesso', function () {
     $agendado = Agendado::latest()->first();
 
     $response = $this->putJson("/api/agendados/{$agendado->id}", [
-        'anuncio_id' => $anuncio->id,
+        'formapagamento' => 'pix',
         'data_inicio' => '2024-11-20',
         'data_fim' => '',
         'servicoId' => [$servico->id],
@@ -255,7 +249,7 @@ test('atualizar reserva sem sucesso', function () {
 
 test('tentar editar reserva fora do prazo permitido', function () {
     $user = User::factory()->create();
-    $this->actingAs($user);
+    Sanctum::actingAs($user);
 
     $locador = User::factory()->create();
     $this->seed(CategoriaSeeder::class);
@@ -283,22 +277,20 @@ test('tentar editar reserva fora do prazo permitido', function () {
     $anuncio = Anuncio::latest()->first();
     $servico = Servico::factory()->create();
     
-    $this->postJson('/api/agendados', [
-        'servico_id' => [$servico->id],
-        'anuncio_id' => $anuncio->id,
-        'formapagamento' => 'dinheiro',
-        'data_inicio' => now()->addDays(2)->toDateString(), // Reserva para daqui 3 dias
-        'data_fim' => now()->addDays(3)->toDateString(),
+    $this->postJson("/api/agendados/{$anuncio->id}", [
+        'servicoId' => [$servico->id],
+        'formapagamento' => 'pix',
+        'data_inicio' => now()->addDays(1)->toDateString(), // Reserva para daqui 1 dias
+        'data_fim' => now()->addDays(2)->toDateString(),
     ]);
 
     $agendado = Agendado::latest()->first();
 
     $response = $this->putJson("/api/agendados/{$agendado->id}", [
-        'anuncio_id' => $anuncio->id,
-        'data_inicio' => '2024-11-20',
-        'data_fim' => '2024-12-11',
+        'data_inicio' => '2024-10-10',
+        'data_fim' => '2024-10-11',
         'servicoId' => [$servico->id],
-        'formapagamento' => 'cartao',
+        'formapagamento' => 'pix',
     ]);
 
     $response->assertStatus(403)
@@ -310,7 +302,7 @@ test('tentar editar reserva fora do prazo permitido', function () {
 
 test('Pesquisar reserva futura', function () {
     $user = User::factory()->create();
-    $this->actingAs($user);
+    Sanctum::actingAs($user);
 
     $locador = User::factory()->create();
     $this->seed(CategoriaSeeder::class);
@@ -338,10 +330,9 @@ test('Pesquisar reserva futura', function () {
     $anuncio = Anuncio::latest()->first();
     $servico = Servico::factory()->create();
 
-    $response = $this->postJson('/api/agendados', [
-        'servico_id' => [$servico->id],
-        'anuncio_id' => $anuncio->id,
-        'formapagamento' => 'dinheiro',
+    $response = $this->postJson("/api/agendados/{$anuncio->id}", [
+        'servicoId' => [$servico->id],
+        'formapagamento' => 'pix',
         'data_inicio' => '2024-11-10',
         'data_fim' => '2024-12-10',
     ]);
@@ -388,10 +379,9 @@ test('Pesquisar reserva passada', function () {
     $anuncio = Anuncio::latest()->first();
     $servico = Servico::factory()->create();
 
-    $response = $this->postJson('/api/agendados', [
+    $response = $this->postJson("/api/agendados/{$anuncio->id}", [
         'servico_id' => [$servico->id],
-        'anuncio_id' => $anuncio->id,
-        'formapagamento' => 'dinheiro',
+        'formapagamento' => 'pix',
         'data_inicio' => '2023-10-10', // Reserva passada
         'data_fim' => '2023-11-10',    // Reserva passada
     ]);
@@ -444,10 +434,9 @@ test('cancelar reserva com sucesso', function () {
 
     $servico = Servico::factory()->create();
 
-    $response = $this->postJson('/api/agendados', [
+    $response = $this->postJson("/api/agendados/{$anuncio->id}", [
         'servico_id' => [$servico->id],
-        'anuncio_id' => $anuncio->id,
-        'formapagamento' => 'dinheiro',
+        'formapagamento' => 'pix',
         'data_inicio' => '2024-11-10',
         'data_fim' => '2024-12-10',
     ]);
@@ -471,7 +460,7 @@ test('cancelar reserva com sucesso', function () {
 
 test('tentar cancelar reserva fora do prazo permitido', function () {
     $user = User::factory()->create();
-    $this->actingAs($user);
+    Sanctum::actingAs($user);
 
     $locador = User::factory()->create();
     $this->seed(CategoriaSeeder::class);
@@ -499,10 +488,9 @@ test('tentar cancelar reserva fora do prazo permitido', function () {
     $anuncio = Anuncio::latest()->first();
     $servico = Servico::factory()->create();
     
-    $this->postJson('/api/agendados', [
-        'servico_id' => [$servico->id],
-        'anuncio_id' => $anuncio->id,
-        'formapagamento' => 'dinheiro',
+    $this->postJson("/api/agendados/{$anuncio->id}", [
+        'servicoId' => [$servico->id],
+        'formapagamento' => 'pix',
         'data_inicio' => now()->addDays(2)->toDateString(), // Reserva para daqui 3 dias
         'data_fim' => now()->addDays(3)->toDateString(),
     ]);
