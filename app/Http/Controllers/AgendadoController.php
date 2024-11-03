@@ -32,7 +32,7 @@ class AgendadoController extends Controller
     {
         $user = Auth::user();
 
-        if ($user->typeUsers->first()->tipousu !== 'locatario') {
+        if ($user->typeUsers->first()->tipousu !== 'Locatario') {
             Log::channel('logagendados')->warning('Acesso negado a meus agendados', [
                 'user_id' => $user->id,
                 'reason' => 'Permissão negada',
@@ -122,26 +122,27 @@ class AgendadoController extends Controller
                 ], 422);
             }
 
+            // calcula a quantidade de dias da locação
+            $quantidadeDias = (new \DateTime($dataInicio))->diff(new \DateTime($dataFim))->days + 1; // +1 para incluir o último dia
+
+            // calcula o valor total
+            $valorAnuncio = $anuncio->valor;
+            $valorTotalAnuncio = $valorAnuncio * $quantidadeDias;
+
+            // soma valor dos serviços
+            $valorTotalServicos = 0;
             if ($request->has('servicoId') && is_array($request->servicoId)) {
                 foreach ($request->servicoId as $servicoId) {
                     $servico = Servico::find($servicoId);
                     if ($servico) {
-                        $servicoAgenda = json_decode($servico->agenda, true) ?? [];
-                        $servicoDatasIndisponiveis = collect($servicoAgenda)->map(function ($data) {
-                            return date('Y-m-d', strtotime($data));
-                        });
-
-                        if ($servicoDatasIndisponiveis->contains($dataInicio) || $servicoDatasIndisponiveis->contains($dataFim)) {
-                            return response()->json([
-                                'status' => false,
-                                'message' => "As datas da reserva estão fora da agenda do serviço ID: $servicoId.",
-                            ], 422);
-                        }
+                        $valorTotalServicos += $servico->valor * $quantidadeDias;
                     }
                 }
             }
 
-            // Conflito de datas
+
+            $valorTotal = $valorTotalAnuncio + $valorTotalServicos;
+
             $conflict = Agendado::where('anuncio_id', $anuncio_id)
                 ->where(function ($query) use ($dataInicio, $dataFim) {
                     $query->where('data_inicio', '<=', $dataFim)
@@ -163,6 +164,12 @@ class AgendadoController extends Controller
                     'message' => 'Este anúncio já está reservado para as datas selecionadas.',
                 ], 409);
             }
+            Log::channel('logagendados')->info('Valor total calculado', [
+                'valor_total_anuncio' => $valorTotalAnuncio,
+                'valor_total_servicos' => $valorTotalServicos,
+                'valor_total' => $valorTotal,
+            ]);
+
 
             $agendado = new Agendado();
             $agendado->user_id = Auth::id();
@@ -170,6 +177,7 @@ class AgendadoController extends Controller
             $agendado->formapagamento = $validatedData['formapagamento'];
             $agendado->data_inicio = $dataInicio;
             $agendado->data_fim = $dataFim;
+            $agendado->valor_total = $valorTotal;
             $agendado->save();
 
             if ($request->has('servicoId') && is_array($request->servicoId)) {
@@ -186,12 +194,14 @@ class AgendadoController extends Controller
                 'created_at' => now(),
                 'data_inicio' => $dataInicio,
                 'data_fim' => $dataFim,
+                'valor_total' => $valorTotal,
             ]);
 
             return response()->json([
                 'status' => true,
                 'message' => 'Reserva criada com sucesso.',
                 'agendado' => $agendado,
+                'valor_total' => $valorTotal,
             ], 201);
 
         } catch (\Exception $e) {
@@ -285,6 +295,7 @@ class AgendadoController extends Controller
         DB::beginTransaction();
 
         try {
+
             $validatedData = $request->validate([
                 'servicoId' => 'nullable|array',
                 'formapagamento' => 'sometimes|required|string|max:50',
@@ -302,47 +313,50 @@ class AgendadoController extends Controller
                 ], 403);
             }
 
-            if (array_key_exists('data_inicio', $validatedData)) {
-                $agendado->data_inicio = $validatedData['data_inicio'];
-            }
-            if (array_key_exists('data_fim', $validatedData)) {
-                $agendado->data_fim = $validatedData['data_fim'];
-            }
-            if (array_key_exists('formapagamento', $validatedData)) {
-                $agendado->formapagamento = $validatedData['formapagamento'];
-            }
-
-            foreach ($validatedData['servicoId'] ?? [] as $servicoId) {
-                $servico = Servico::findOrFail($servicoId);
-                $dataInicio = $agendado->data_inicio;
-                $dataFim = $agendado->data_fim;
-
-                if ($dataInicio < $servico->agenda[0] || $dataFim > $servico->agenda[count($servico->agenda) - 1]) {
-                    return response()->json([
-                        'status' => false,
-                        'message' => "As datas da reserva estão fora da agenda do serviço.",
-                    ], 422);
-                }
-            }
-
-            $dataAtual = now();
-            if ($dataAtual->diffInDays($agendado->data_inicio, false) < 3) {
-                return response()->json([
-                    'status' => false,
-                    'error' => 'Você só pode editar esta reserva até 3 dias antes da data de início.',
-                ], 403);
-            }
-
             $anuncio = Anuncio::findOrFail($agendado->anuncio_id);
             $agenda = json_decode($anuncio->agenda, true) ?? [];
             $datasIndisponiveis = collect($agenda)->map(fn($data) => date('Y-m-d', strtotime($data)));
 
-            if ($datasIndisponiveis->contains($agendado->data_inicio) || $datasIndisponiveis->contains($agendado->data_fim)) {
+            if (isset($validatedData['data_inicio']) && $datasIndisponiveis->contains(date('Y-m-d', strtotime($validatedData['data_inicio'])))) {
                 return response()->json([
                     'status' => false,
-                    'message' => 'As datas selecionadas estão indisponíveis para reserva.',
+                    'message' => 'A nova data de início está indisponível para reserva.',
                 ], 422);
             }
+
+            if (isset($validatedData['data_fim']) && $datasIndisponiveis->contains(date('Y-m-d', strtotime($validatedData['data_fim'])))) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'A nova data de fim está indisponível para reserva.',
+                ], 422);
+            }
+
+            if (isset($validatedData['formapagamento'])) {
+                $agendado->formapagamento = $validatedData['formapagamento'];
+            }
+            if (isset($validatedData['data_inicio'])) {
+                $agendado->data_inicio = $validatedData['data_inicio'];
+            }
+            if (isset($validatedData['data_fim'])) {
+                $agendado->data_fim = $validatedData['data_fim'];
+            }
+
+            $quantidadeDias = (new \DateTime($agendado->data_inicio))->diff(new \DateTime($agendado->data_fim))->days + 1; // +1 para incluir o último dia
+            $valorAnuncio = $anuncio->valor;
+            $valorTotalAnuncio = $valorAnuncio * $quantidadeDias;
+
+            $valorTotalServicos = 0;
+            if ($request->has('servicoId') && is_array($request->servicoId)) {
+                foreach ($request->servicoId as $servicoId) {
+                    $servico = Servico::find($servicoId);
+                    if ($servico) {
+                        $valorTotalServicos += $servico->valor;
+                    }
+                }
+            }
+
+            $valorTotal = $valorTotalAnuncio + $valorTotalServicos;
+            $agendado->valor_total = $valorTotal;
 
             $agendado->save();
 
@@ -356,6 +370,7 @@ class AgendadoController extends Controller
                 'status' => true,
                 'message' => 'Reserva atualizada com sucesso.',
                 'agendado' => $agendado,
+                'valor_total' => $valorTotal,
             ], 200);
 
         } catch (\Illuminate\Validation\ValidationException $e) {
