@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\ComprovanteController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Middeleware\AdminAccess;
 use App\Http\Controllers\RecoverPasswordCodeController;
 use App\Http\Controllers\ServicoController;
@@ -22,14 +24,14 @@ Route::post("/reset-password-code", [RecoverPasswordCodeController::class, 'rese
 
 // Rotas protegidas
 Route::middleware('auth:sanctum')->group(function () {
-    // Rotas para usuário
+// Rotas para usuário
     Route::post('/user/logout', [AuthController::class, 'logout']);
     Route::get('/user/profile', [AuthController::class, 'profile']);
     Route::get('/user/{id}', [UserController::class, 'show']);
     Route::put('/user/{id}', [UserController::class, 'update']);
     Route::delete('/user/{id}', [UserController::class, 'destroy']); // Soft delete
 
-    // Rotas para anúncios
+// Rotas para anúncios
     Route::get('/anuncios', [AnuncioController::class, 'index']);
     Route::post('/anuncios', [AnuncioController::class, 'store']);
     Route::get('/anuncios/meus', [AnuncioController::class, 'meusAnuncios']);
@@ -38,10 +40,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/anuncios/{id}', [AnuncioController::class, 'destroy']);
     Route::get('/categoria', [AnuncioController::class, 'apresentaCategoriaAnuncio']);
 
-    // Rota de busca por anúncios sem autenticação
+// Rota de busca por anúncios sem autenticação
     Route::get('/anuncios/buscar', [AnuncioController::class, 'indexNoAuth']);
 
-    //Rotas para serviços
+//Rotas para serviços
     Route::get('/servicos', [ServicoController::class, 'index']);
     Route::get('/servicos/meus', [ServicoController::class, 'meusServicos']);
     Route::get('/servicos/create', [ServicoController::class, 'create']);
@@ -60,6 +62,18 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/verifica-agenda/{id}', [AnuncioController::class, 'verificarDisponibilidade']);
 
+    Route::get('/comprovantes', [ComprovanteController::class, 'index']);
+    Route::post('/comprovantes', [ComprovanteController::class, 'store']);
+    Route::get('/comprovantes/{id}', [ComprovanteController::class, 'show']);
+
+
+//Rotas para preencher os relatórios
+    Route::get('/dashboard/anuncios', [DashboardController::class, 'getAnuncios']);
+    Route::get('/dashboard/agendados', [DashboardController::class, 'getAgendados']);
+    Route::get('/dashboard/servicos', [DashboardController::class, 'getServicos']);
+    Route::get('/dashboard/relatorios', [DashboardController::class, 'getRelatorios']);
+
+
 });
 
 // Rotas protegidas para administradores
@@ -70,7 +84,7 @@ Route::middleware(['auth:sanctum', 'admin'])->group(function () {
 
     Route::get('/admin/dashboard', [AdminController::class, 'dashboard'])->name('api.admin.dashboard');
 
-    // Restaurar usuários ou anúncios excluídos (soft delete)
+//Restaurar usuários ou anúncios excluídos (soft delete)
     Route::post('/admin/{id}/restore', [AdminController::class, 'restore']);
 
     Route::delete('/admin/user/{id}', [AdminController::class, 'destroyUser']);

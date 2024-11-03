@@ -3,13 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Comprovante;
-use App\Models\User;
 use App\Models\Agendado;
 use App\Models\Servico;
 use App\Models\Anuncio;
-use App\Http\Controllers\Controller;
-use GuzzleHttp\Client;
-use GuzzleHttp\Exception\RequestException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;

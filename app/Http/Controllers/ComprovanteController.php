@@ -4,12 +4,15 @@ namespace App\Http\Controllers;
 
 use App\Models\Comprovante;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class ComprovanteController extends Controller
 {
     public function index()
     {
-        $comprovantes = Comprovante::all();
+        $userId = Auth::id();
+
+        $comprovantes = Comprovante::where('user_id', $userId)->with(['user', 'anuncio', 'servico'])->get();
         return response()->json($comprovantes);
     }
 
@@ -31,26 +34,5 @@ class ComprovanteController extends Controller
         return response()->json($comprovante);
     }
 
-    public function update(Request $request, $id)
-    {
-        $comprovante = Comprovante::findOrFail($id);
-
-        $validatedData = $request->validate([
-            'user_id' => 'required|exists:users,id',
-            'anuncios_id' => 'nullable|exists:anuncios,id',
-            'servicos_id' => 'nullable|exists:servicos,id',
-        ]);
-
-        $comprovante->update($validatedData);
-        return response()->json($comprovante);
-    }
-
-    public function destroy($id)
-    {
-        $comprovante = Comprovante::findOrFail($id);
-        $comprovante->delete();
-
-        return response()->json(['message' => 'Comprovante deleted successfully']);
-    }
 }
 

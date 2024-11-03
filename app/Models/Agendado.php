@@ -26,9 +26,9 @@ class Agendado extends Model
         return $this->belongsTo(Anuncio::class);
     }
 
-    public function servico()
+    public function servicos()
     {
-        return $this->belongsToMany(Servico::class, 'agendado_servico','agendado_id','servico_id');
+        return $this->belongsToMany(Servico::class, 'agendado_servico', 'agendado_id', 'servico_id');
     }
 
     public function user()
