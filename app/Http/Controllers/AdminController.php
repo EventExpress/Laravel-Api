@@ -14,18 +14,6 @@ use Illuminate\Support\Facades\Log;
 class AdminController extends Controller
 {
 
-    public function dashboard()
-    {
-        $user = Auth::user();
-
-        // Verificar se o usuário autenticado tem o tipo de usuário 'admin'
-        if (Auth::check() && $user->typeUsers->contains('tipousu', 'admin')) {
-            return response()->json(['message' => 'Welcome to the admin dashboard!']);
-        }
-
-        return response()->json(['message' => 'Unauthorized'], 403);
-    }
-
     public function restore($id) : JsonResponse
     {
         DB::beginTransaction();

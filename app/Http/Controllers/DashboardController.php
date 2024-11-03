@@ -3,10 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Categoria;
-use Illuminate\Http\Request;
-use App\Models\Anuncio;
 use App\Models\Agendado;
 use App\Models\Servico;
+
 class DashboardController extends Controller
 {
     public function getAnuncios()

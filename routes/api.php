@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ComprovanteController;
+use App\Http\Controllers\DashboardAdmin;
 use App\Http\Controllers\DashboardController;
 use App\Http\Middeleware\AdminAccess;
 use App\Http\Controllers\RecoverPasswordCodeController;
@@ -38,6 +39,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/anuncios/{id}', [AnuncioController::class, 'show']);
     Route::put('/anuncios/{id}', [AnuncioController::class, 'update']);
     Route::delete('/anuncios/{id}', [AnuncioController::class, 'destroy']);
+    Route::get('/anuncios/categoria/titulo/{titulo}', [AnuncioController::class, 'anunciosPorTituloCategoria']);
+
+
+
     Route::get('/categoria', [AnuncioController::class, 'apresentaCategoriaAnuncio']);
 
 // Rota de busca por anúncios sem autenticação
@@ -71,13 +76,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/dashboard/anuncios', [DashboardController::class, 'getAnuncios']);
     Route::get('/dashboard/agendados', [DashboardController::class, 'getAgendados']);
     Route::get('/dashboard/servicos', [DashboardController::class, 'getServicos']);
-    Route::get('/dashboard/relatorios', [DashboardController::class, 'getRelatorios']);
-
 
 });
 
 // Rotas protegidas para administradores
-Route::middleware(['auth:sanctum', 'admin'])->group(function () {
+Route::middleware(['auth:sanctum', 'AdminAccess'])->group(function () {
     Route::get('/admin', function () {
         return "Hello Admin";
     });
@@ -92,5 +95,7 @@ Route::middleware(['auth:sanctum', 'admin'])->group(function () {
     Route::delete('/admin/servicos/{id}', [AdminController::class, 'destroyServico']);
 
     Route::delete('/admin/anuncios/{id}', [AdminController::class, 'destroyAnuncio']);
+
+    Route::get('/dashboard/locacoes', [DashboardAdmin::class, 'getLocacoesPorMes']);
 
 });

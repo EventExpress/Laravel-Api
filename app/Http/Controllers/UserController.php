@@ -21,7 +21,6 @@ class UserController extends Controller
     {
         $users = User::orderby('id')->paginate(2);
 
-        // Log detalhado para a listagem de usuários
         Log::channel('main')->info('User list retrieved', [
             'total_users' => count($users),
             'fetched_at' => now(),
@@ -58,7 +57,6 @@ class UserController extends Controller
         DB::beginTransaction();
 
         try {
-            // Criação do endereço
             $endereco = new Endereco();
             $endereco->cidade = $request->cidade;
             $endereco->cep = $request->cep;
@@ -66,7 +64,6 @@ class UserController extends Controller
             $endereco->bairro = $request->bairro;
             $endereco->save();
 
-            // Criação do usuário
             $usuario = new User();
             $usuario->nome = $request->nome;
             $usuario->sobrenome = $request->sobrenome;
@@ -79,7 +76,6 @@ class UserController extends Controller
             $usuario->password = Hash::make($request['password']);
             $usuario->save();
 
-            // Associar todos os tipos de usuário fornecidos
             $tipos = $request->input('tipousu');
             $typeUsers = TypeUser::whereIn('tipousu', $tipos)->pluck('id');
             $usuario->typeUsers()->sync($typeUsers);
@@ -88,7 +84,6 @@ class UserController extends Controller
 
             $token = $usuario->createToken('Personal Access Token after register')->plainTextToken;
 
-            // Log detalhado de criação de usuário
             Log::channel('main')->info('User created', [
                 'user_id' => $usuario->id,
                 'user_name' => $usuario->nome . ' ' . $usuario->sobrenome,
@@ -112,7 +107,6 @@ class UserController extends Controller
         } catch (\Exception $e) {
             DB::rollback();
 
-            // Log de erro detalhado ao criar usuário
             Log::channel('main')->error('User creation failed', [
                 'error_message' => $e->getMessage(),
                 'occurred_at' => now(),
@@ -133,7 +127,6 @@ class UserController extends Controller
         try {
             $user = User::with(['endereco', 'typeUsers'])->findOrFail($id);
 
-            // Log detalhado de exibição de usuário
             Log::channel('main')->info('User retrieved', [
                 'user_id' => $user->id,
                 'user_name' => $user->nome . ' ' . $user->sobrenome,
@@ -146,7 +139,6 @@ class UserController extends Controller
                 'user' => $user,
             ], 200);
         } catch (\Exception $e) {
-            // Log de erro ao buscar usuário
             Log::channel('main')->error('User retrieval failed', [
                 'user_id' => $id,
                 'error_message' => $e->getMessage(),
@@ -258,17 +250,14 @@ class UserController extends Controller
         try {
             $user = User::findOrFail($id);
 
-            // Desassociar todos os tipos de usuário antes de deletar
             $user->typeUsers()->detach();
 
             $user->delete();
 
             DB::commit();
 
-            // Captura o usuário autenticado que está realizando a exclusão
             $deletedBy = Auth::user();
 
-            // Log detalhado da exclusão, incluindo quem removeu
             Log::channel('main')->info('User deleted', [
                 'user_id' => $id,
                 'deleted_by_user_id' => $deletedBy->id,
@@ -283,7 +272,6 @@ class UserController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
 
-            // Log de erro ao tentar excluir o usuário
             Log::channel('main')->error('User deletion failed', [
                 'user_id' => $id,
                 'error_message' => $e->getMessage(),

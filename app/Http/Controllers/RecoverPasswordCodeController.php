@@ -21,7 +21,6 @@ class RecoverPasswordCodeController extends Controller
     public function forgotPasswordCode(ForgotPasswordRequest $request): JsonResponse
     {
 
-        // Recuperar os dados do usuário no banco de dados com o e-mail
         $user = User::where('email', $request->email)->first();
 
         if (!$user) {
@@ -36,23 +35,18 @@ class RecoverPasswordCodeController extends Controller
 
         try {
 
-            // Recuperar os registros recuperar senha do usuário
             $userPasswordResets = DB::table('password_reset_tokens')->where([
                 ['email', $request->email]
             ]);
 
-            // Se existir token cadastrado para o usuário recuperar senha, excluir o mesmo
             if ($userPasswordResets) {
                 $userPasswordResets->delete();
             }
 
-            // Gerar o código com 6 digitos
             $code = mt_rand(100000, 999999);
 
-            // Criptografar o código
             $token = Hash::make($code);
 
-            // Salvar o token no banco de dados
             $userNewPasswordResets = DB::table('password_reset_tokens')->insert([
                 'email' => $request->email,
                 'token' => $token,
@@ -60,7 +54,6 @@ class RecoverPasswordCodeController extends Controller
             ]);
 
 
-            // Enviar e-mail após cadastrar no banco de dados novo token recuperar senha
             if ($userNewPasswordResets) {
 
                 // Obter a data atual
@@ -68,11 +61,10 @@ class RecoverPasswordCodeController extends Controller
 
                 $oneHourLater = $currentDate->addHour();
 
-                // Formatar data e hora
+
                 $formattedTime = $oneHourLater->format('H:i');
                 $formattedDate = $oneHourLater->format('d/m/Y');
 
-                // Dados para enviar e-mail
                 Mail::to($user->email)->send(new SendEmailForgotPasswordCode($user, $code, $formattedDate, $formattedTime));
             }
 
@@ -172,7 +164,6 @@ class RecoverPasswordCodeController extends Controller
 
             }
 
-            // Alterar a senha do usuário no banco de dados
             $user->update([
                 'password' => Hash::make($request->password)
             ]);
