@@ -28,7 +28,8 @@ class AdminAccess
             }
         }
 
-        dd('Acesso negado, você não é um administrador', 403);
+        return response()->json(['error' => 'Acesso negado, você não é um administrador'], 403);
+
 
     }
 }

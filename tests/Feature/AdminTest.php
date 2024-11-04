@@ -14,60 +14,140 @@ use Illuminate\Http\UploadedFile;
 uses(RefreshDatabase::class);
 
 
-/*test('excluir serviço com sucesso', function () {
-    // Criação de um administrador
+it('deletar serviço como admin', function () {
+    
+    $this->seed(TypeUserSeeder::class);
+
     $admin = User::factory()->create();
-    TypeUser::create(['user_id' => $admin->id, 'tipousu' => 'admin']);
+    $typeAdmin = TypeUser::where('tipousu', 'admin')->first();
+    
+    $admin->typeUsers()->attach($typeAdmin->id);
 
-    // Criação de um usuário "prestador" que vai criar o serviço
-    $user = User::factory()->create();
-    TypeUser::create(['user_id' => $user->id, 'tipousu' => 'prestador']);
+    $prestador = User::factory()->create();
 
-    // Autenticar como o prestador para criar o serviço
-    Sanctum::actingAs($user);
+    $servico = Servico::factory()->create(['user_id'=> $prestador->id]);
 
-    // O usuário prestador cria o serviço
-    $response = $this->postJson('/api/servicos', [
-        'titulo' => 'Serviço de Limpeza',
-        'cidade' => 'Curitiba',
-        'bairro' => 'Centro',
-        'descricao' => 'Limpeza geral de casa.',
-        'valor' => 150,
-        'agenda' => '2024-10-15',
-    ]);
-
-    $response->assertStatus(201)
-             ->assertJson(['message' => 'Serviço criado com sucesso.']);
-
-    $servico = Servico::latest()->first(); // Recuperar o serviço criado
-    $this->assertNotNull($servico, 'O serviço não foi encontrado após a criação.');
-
-    // Autenticar como admin para excluir o serviço
     Sanctum::actingAs($admin);
 
-    // O admin exclui o serviço
-    $response = $this->deleteJson("/admin/servico/{$servico->id}");
+    $response = $this->deleteJson("/api/admin/servicos/{$servico->id}");
 
-    // Verificações
     $response->assertStatus(200)
-             ->assertJson(['message' => 'Serviço excluído com sucesso.']);
+             ->assertJson(['message' => 'Serviço deletado com sucesso!']);
 
-    // Verifica se o serviço foi excluído do banco de dados
-    $this->assertDeleted('servicos', ['id' => $servico->id]);
-});*/
+    $this->assertSoftDeleted('servicos', ['id' => $servico->id]);
+});
 
-/*it('deletar usuário como admin', function () {
+
+it('deletar anuncio como admin', function () {
+    
+    $this->seed(TypeUserSeeder::class);
+
     $admin = User::factory()->create();
-    TypeUser::create(['user_id' => $admin->id, 'tipousu' => 'admin']);
+    $typeAdmin = TypeUser::where('tipousu', 'admin')->first();
+    
+    $admin->typeUsers()->attach($typeAdmin->id);
+
+    $locador = User::factory()->create();
+
+    $anuncio = Anuncio::factory()->create(['user_id'=> $locador->id]);
+
+    Sanctum::actingAs($admin);
+
+    $response = $this->deleteJson("/api/admin/anuncios/{$anuncio->id}");
+
+    $response->assertStatus(200)
+             ->assertJson(['message' => 'Anúncio deletado com sucesso!']);
+    //$this->assertSoftDeleted('anuncios', ['id' => $anuncio->id]);
+});
+
+
+it('deletar usuário como admin', function () {
+    $this->seed(TypeUserSeeder::class);
+
+    $admin = User::factory()->create();
+    $typeAdmin = TypeUser::where('tipousu', 'admin')->first();
+    
+    $admin->typeUsers()->attach($typeAdmin->id);
+
     $user = User::factory()->create();
 
-    $this->actingAs($admin);
+    Sanctum::actingAs($admin);
 
     $response = $this->deleteJson("/api/admin/user/{$user->id}");
-    
-    $response->assertStatus(200); 
+    $response->assertStatus(200);
     $response->assertJson(['message' => 'Usuário deletado com sucesso!']);
-    $this->assertSoftDeleted('user', ['id' => $user->id]);
+    $this->assertSoftDeleted('users', ['id' => $user->id]);
+});
 
-   
-});*/
+it('deletar e restaurar usuário como admin', function () {
+    $this->seed(TypeUserSeeder::class);
+
+    $admin = User::factory()->create();
+    $typeAdmin = TypeUser::where('tipousu', 'admin')->first();
+    
+    $admin->typeUsers()->attach($typeAdmin->id);
+
+    $user = User::factory()->create();
+
+    Sanctum::actingAs($admin);
+
+    $response = $this->deleteJson("/api/admin/user/{$user->id}");
+    $response->assertStatus(200);
+    $response->assertJson(['message' => 'Usuário deletado com sucesso!']);
+    $this->assertSoftDeleted('users', ['id' => $user->id]);
+
+    $restoreResponse = $this->patchJson("/api/admin/user/restore/{$user->id}");
+    $restoreResponse->assertStatus(200)->assertJson(['message' => 'Usuário restaurado com sucesso!']);
+    $this->assertDatabaseHas('users', ['id' => $user->id, 'deleted_at' => null]);
+
+});
+/*
+it('deletar e restaurar anuncio como admin', function () {
+    $this->seed(TypeUserSeeder::class);
+
+    $admin = User::factory()->create();
+    $typeAdmin = TypeUser::where('tipousu', 'admin')->first();
+    $admin->typeUsers()->attach($typeAdmin->id);
+
+    $locador = User::factory()->create();
+
+    $anuncio = Anuncio::factory()->create(['user_id'=> $locador->id]);
+
+    Sanctum::actingAs($admin);
+
+    $response = $this->deleteJson("/api/admin/anuncios/{$anuncio->id}");
+
+    $response->assertStatus(200)
+             ->assertJson(['message' => 'Anúncio deletado com sucesso!']);
+    $this->assertSoftDeleted('anuncios', ['id' => $anuncio->id]);
+
+    $restoreResponse = $this->patchJson("/api/admin/anuncios/restore/{$anuncio->id}");
+    $restoreResponse->assertStatus(200)->assertJson(['message' => 'Anúncio restaurado com sucesso!']);
+    $this->assertDatabaseHas('anuncios', ['id' => $anuncio->id, 'deleted_at' => null]);
+
+});
+*/
+it('deletar e restaurar servico como admin', function () {
+    $this->seed(TypeUserSeeder::class);
+
+    $admin = User::factory()->create();
+    $typeAdmin = TypeUser::where('tipousu', 'admin')->first();
+    $admin->typeUsers()->attach($typeAdmin->id);
+
+    $prestador = User::factory()->create();
+
+    $servico = Servico::factory()->create(['user_id'=> $prestador->id]);
+
+    Sanctum::actingAs($admin);
+
+    $response = $this->deleteJson("/api/admin/servicos/{$servico->id}");
+
+    $response->assertStatus(200)
+             ->assertJson(['message' => 'Serviço deletado com sucesso!']);
+    $this->assertSoftDeleted('servicos', ['id' => $servico->id]);
+
+    $restoreResponse = $this->patchJson("/api/admin/servicos/restore/{$servico->id}");
+    $restoreResponse->assertStatus(200)->assertJson(['message' => 'Serviço restaurado com sucesso!']);
+    $this->assertDatabaseHas('servicos', ['id' => $servico->id, 'deleted_at' => null]);
+
+});

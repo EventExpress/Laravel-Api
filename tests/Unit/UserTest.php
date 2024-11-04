@@ -3,6 +3,7 @@
 use App\Models\Endereco;
 use App\Models\Nome;
 use App\Models\User;
+use Laravel\Sanctum\Sanctum;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -155,7 +156,7 @@ test('Tentar cadastro com senha abaixo do limite mínimo de caracteres', functio
 test('Logar com usuário ou senha inválidos', function () {
     $user = User::factory()->create([
         'email' => 'usuario@teste.com',
-        'password' => bcrypt('senhaValida123') // Certifique-se de que a senha está criptografada
+        'password' => bcrypt('senhaValida123') //a senha está criptografada
     ]);
 
     $response = $this->postJson('/api/login', [
@@ -173,7 +174,7 @@ test('Logar com usuário ou senha inválidos', function () {
 test('Logar com usuário e senha válidos', function () {
     $user = User::factory()->create([
         'email' => 'usuario@teste.com',
-        'password' => bcrypt('senhaValida123') //Certifica de que a senha está criptografada
+        'password' => bcrypt('senhaValida123') //a senha está criptografada
     ]);
 
     $response = $this->postJson('/api/login', [
@@ -183,10 +184,153 @@ test('Logar com usuário e senha válidos', function () {
 
     $response->assertStatus(200);//200
 
-    //Verifica se a mensagem "Authorized" e o token estão presentes
+    //a mensagem "Authorized" e o token estão presentes
     $response->assertJson([
         'message' => 'Authorized',
-        'token' => true, //Verifica se o token foi gerado
+        'token' => true,
     ]);
 });
 
+
+test('Alterar usuário com sucesso', function (){
+    $response = $this->postJson('/api/register', [
+        'nome' => 'Teste',
+        'sobrenome' => 'Usuário',
+        'telefone' => '41988976119',
+        'datanasc' => '2002-02-13',
+        'email' => 'testeusu@gmail.com',
+        'password' => 'senhaSegura123',
+        'password_confirmation' => 'senhaSegura123',
+        'tipousu' => ['Locatario'],
+        'cpf' => '13232143212',
+        'cnpj' => '',
+        'cidade' => 'Curitiba',
+        'cep' => '81925-187',
+        'numero' => 199,
+        'bairro' => 'Sitio Cercado',
+    ]);
+
+    $response->assertStatus(201);
+
+    $response->assertJson(['message' => 'Usuário criado com sucesso!']);
+
+    $user = User::latest()->first();
+
+    Sanctum::actingAs($user);
+
+    $response = $this->putJson("/api/user/{$user->id}", [
+        'nome' => 'TesteAtualizado',
+        'sobrenome' => 'UsuárioAtualizado',
+        'telefone' => '41988976119',
+        'datanasc' => '2003-02-13',
+        'email' => 'testeatualizado@gmail.com',
+        'password' => 'senhaAtualizada123',
+        'password_confirmation' => 'senhaAtuaizada123',
+        'tipousu' => ['Locatario'],
+        'cpf' => '13232143212',
+        'cnpj' => '',
+        'cidade' => 'Curitiba',
+        'cep' => '81925-185',
+        'numero' => 200,
+        'bairro' => 'Portão',
+    ]);
+
+    $response->assertStatus(200);
+    $response->assertJson(['message' => 'Usuário atualizado com sucesso!']);
+
+    $this->assertDatabaseHas('users', [
+        'id' => $user->id,
+        'nome' => 'TesteAtualizado',
+    ]);
+});
+
+test('Alterar usuário sem sucesso', function (){
+    $response = $this->postJson('/api/register', [
+        'nome' => 'Teste',
+        'sobrenome' => 'Usuário',
+        'telefone' => '41988976119',
+        'datanasc' => '2002-02-13',
+        'email' => 'testeusu@gmail.com',
+        'password' => 'senhaSegura123',
+        'password_confirmation' => 'senhaSegura123',
+        'tipousu' => ['Locatario'],
+        'cpf' => '13232143212',
+        'cnpj' => '',
+        'cidade' => 'Curitiba',
+        'cep' => '81925-187',
+        'numero' => 199,
+        'bairro' => 'Sitio Cercado',
+    ]);
+
+    $response->assertStatus(201);
+
+    $response->assertJson(['message' => 'Usuário criado com sucesso!']);
+
+    $user = User::latest()->first();
+
+    Sanctum::actingAs($user);
+
+    $response = $this->putJson("/api/user/{$user->id}", [
+        'nome' => '',//vazio
+        'sobrenome' => 'UsuárioAtualizado',
+        'telefone' => '41988976119',
+        'datanasc' => '2003-02-13',
+        'email' => 'testeatualizado@gmail.com',
+        'password' => 'senhaAtualizada123',
+        'password_confirmation' => 'senhaAtuaizada123',
+        'tipousu' => ['Locatario'],
+        'cpf' => '13232143212',
+        'cnpj' => '',
+        'cidade' => 'Curitiba',
+        'cep' => '81925-185',
+        'numero' => 200,
+        'bairro' => 'Portão',
+    ]);
+
+    $response->assertStatus(422);
+    $response->assertJsonValidationErrors(['nome']);
+});
+
+test('Deletar usuário com sucesso', function (){
+    $response = $this->postJson('/api/register', [
+        'nome' => 'Teste',
+        'sobrenome' => 'Usuário',
+        'telefone' => '41988976119',
+        'datanasc' => '2002-02-13',
+        'email' => 'testeusu@gmail.com',
+        'password' => 'senhaSegura123',
+        'password_confirmation' => 'senhaSegura123',
+        'tipousu' => ['Locatario'],
+        'cpf' => '13232143212',
+        'cnpj' => '',
+        'cidade' => 'Curitiba',
+        'cep' => '81925-187',
+        'numero' => 199,
+        'bairro' => 'Sitio Cercado',
+    ]);
+
+    $response->assertStatus(201);
+
+    $response->assertJson(['message' => 'Usuário criado com sucesso!']);
+
+    $user = User::latest()->first();
+
+    Sanctum::actingAs($user);
+
+    $response = $this->deleteJson("/api/user/{$user->id}");
+
+    $response->assertStatus(200);
+    $response->assertJson(['message' => 'Usuário deletado com sucesso!']);
+});
+
+test('Tentar deletar usuário inexistente', function () {
+    $user = User::factory()->create();
+    Sanctum::actingAs($user);
+
+    $nonExistentId = 9999;
+
+    $response = $this->deleteJson("/api/user/{$nonExistentId}");
+
+    $response->assertStatus(500);
+
+});

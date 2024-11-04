@@ -64,7 +64,7 @@ class AnuncioController extends Controller
 
     public function store(Request $request)
     {
-        //
+
         DB::beginTransaction();
 
         try {
@@ -286,6 +286,51 @@ class AnuncioController extends Controller
         }
     }
 
+    public function getUnavailableDates($id)
+    {
+        // Encontra o anúncio pelo ID
+        $anuncio = Anuncio::find($id);
+
+        // Verifica se o anúncio existe
+        if (!$anuncio) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Anúncio não encontrado.'
+            ], 404);
+        }
+
+        // Decodifica o campo 'agenda' do anúncio
+        $unavailableDates = json_decode($anuncio->agenda, true);
+
+        // Retorna as datas indisponíveis
+        return response()->json([
+            'status' => true,
+            'unavailable_dates' => $unavailableDates,
+        ], 200);
+    }
+
+    public function verificarDisponibilidade ($id)
+    {
+        // Encontra o anúncio pelo ID
+        $anuncio = Anuncio::find($id);
+
+        // Verifica se o anúncio existe
+        if (!$anuncio) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Anúncio não encontrado.'
+            ], 404);
+        }
+
+        // Decodifica o campo 'agenda' do anúncio
+        $unavailableDates = json_decode($anuncio->agenda, true);
+
+        // Retorna as datas indisponíveis
+        return response()->json([
+            'status' => true,
+            'unavailable_dates' => $unavailableDates,
+        ], 200);
+    }
 
 
     public function destroy($id)
@@ -332,4 +377,31 @@ class AnuncioController extends Controller
             ], 500);
         }
     }
+
+    public function anunciosPorTituloCategoria($titulo)
+    {
+        // Verifica se a categoria existe pelo título
+        $categoria = Categoria::where('titulo', $titulo)->first();
+        if (!$categoria) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Categoria não encontrada.'
+            ], 404);
+        }
+
+        // Busca anúncios que estão associados à categoria
+        $anuncios = Anuncio::with('imagens')
+            ->whereHas('categorias', function ($query) use ($categoria) {
+                $query->where('id', $categoria->id);
+            })
+            ->get();
+
+        return response()->json([
+            'status' => true,
+            'anuncios' => $anuncios,
+        ], 200);
+    }
+
+
+
 }

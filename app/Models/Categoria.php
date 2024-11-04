@@ -12,7 +12,7 @@ class Categoria extends Model
     use HasApiTokens,HasFactory, Notifiable;
     protected $fillable=['titulo', 'descricao'];
 
-    public function anuncio()
+    public function anuncios()
     {
         return $this->belongsToMany(Anuncio::class, 'anuncio_categoria', 'categoria_id', 'anuncio_id');
     }

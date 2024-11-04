@@ -14,19 +14,7 @@ use Illuminate\Support\Facades\Log;
 class AdminController extends Controller
 {
 
-    public function dashboard()
-    {
-        $user = Auth::user();
-
-        // Verificar se o usuário autenticado tem o tipo de usuário 'admin'
-        if (Auth::check() && $user->typeUsers->contains('tipousu', 'admin')) {
-            return response()->json(['message' => 'Welcome to the admin dashboard!']);
-        }
-
-        return response()->json(['message' => 'Unauthorized'], 403);
-    }
-
-    public function restore($id) : JsonResponse
+    public function restoreUser($id) : JsonResponse
     {
         DB::beginTransaction();
 
@@ -37,6 +25,12 @@ class AdminController extends Controller
 
             DB::commit();
 
+            Log::channel('main')->info('User restored by admin', [
+                'user_id' => $id,
+                'restored_by' => Auth::id(),
+                'restored_at' => now(),
+            ]);
+
             return response()->json([
                 'message' => 'Usuário restaurado com sucesso!',
                 'user' => $user
@@ -45,8 +39,84 @@ class AdminController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
 
+            Log::channel('main')->error('Failed to restore user by admin', [
+                'user_id' => $id,
+                'error_message' => $e->getMessage(),
+                'occurred_at' => now(),
+            ]);
             return response()->json([
                 'message' => 'Erro ao restaurar usuário',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function restoreAnuncio($id) : JsonResponse
+    {
+        DB::beginTransaction();
+
+        try {
+            $anuncio = Anuncio::withTrashed()->findOrFail($id);
+
+            $anuncio->restore();
+            DB::commit();
+
+            Log::channel('loganuncios')->info('Anuncio restored by admin', [
+                'anuncio_id' => $id,
+                'restored_by' => Auth::id(),
+                'restored_at' => now(),
+            ]);
+
+            return response()->json([
+                'message' => 'Anúncio restaurado com sucesso!',
+                'anuncio' => $anuncio
+            ], 200);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::channel('loganuncios')->error('Failed to restore anuncio by admin', [
+                'anuncio_id' => $id,
+                'error_message' => $e->getMessage(),
+                'occurred_at' => now(),
+            ]);
+
+            return response()->json([
+                'message' => 'Erro ao restaurar anúncio',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function restoreServico($id): JsonResponse
+    {
+        DB::beginTransaction();
+
+        try {
+            $servico = Servico::withTrashed()->findOrFail($id);
+            $servico->restore();
+            DB::commit();
+
+            Log::channel('main')->info('Servico restored by admin', [
+            'servico_id' => $id,
+            'restored_by' => Auth::id(),
+            'restored_at' => now(),
+            ]);
+
+            return response()->json([
+                'message' => 'Serviço restaurado com sucesso!',
+                'servico' => $servico
+            ], 200);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::channel('main')->error('Failed to restore servico by admin', [
+                'servico_id' => $id,
+                'error_message' => $e->getMessage(),
+                'occurred_at' => now(),
+            ]);
+
+            return response()->json([
+                'message' => 'Erro ao restaurar serviço',
                 'error' => $e->getMessage(),
             ], 500);
         }
@@ -165,13 +235,13 @@ class AdminController extends Controller
             ]);
 
             return response()->json(['message' => 'Erro ao deletar anúncio'], 500);
-        }
+        }   
     }
 
     private function isAdmin(): bool
-    {
-        $user = Auth::user();
-        return Auth::check() && $user->typeUsers->contains('tipousu', 'admin');
-    }
+{
+    $user = Auth::user();
+    return Auth::check() && $user->typeUsers->contains('tipousu', 'admin');
+}
 
 }
