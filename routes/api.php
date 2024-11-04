@@ -67,9 +67,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/verifica-agenda/{id}', [AnuncioController::class, 'verificarDisponibilidade']);
 
-    Route::get('/comprovantes', [ComprovanteController::class, 'index']);
-    Route::post('/comprovantes', [ComprovanteController::class, 'store']);
-    Route::get('/comprovantes/{id}', [ComprovanteController::class, 'show']);
+    Route::get('/comprovantes/show', [ComprovanteController::class, 'show']);
 
 
 //Rotas para preencher os relatórios

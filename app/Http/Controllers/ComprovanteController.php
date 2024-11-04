@@ -3,36 +3,58 @@
 namespace App\Http\Controllers;
 
 use App\Models\Comprovante;
+use App\Models\Servico;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class ComprovanteController extends Controller
 {
+    // Construtor para aplicar middleware se necessário
+    public function __construct()
+    {
+        // $this->middleware('auth'); // descomente se quiser proteger as rotas
+    }
+
     public function index()
     {
-        $userId = Auth::id();
+        $comprovantes = Comprovante::all();
 
-        $comprovantes = Comprovante::where('user_id', $userId)->with(['user', 'anuncio', 'servico'])->get();
+        $comprovantes->map(function ($comprovante) {
+            if (is_string($comprovante->servicos_id)) {
+                $servicosIds = json_decode($comprovante->servicos_id);
+            } else {
+                $servicosIds = $comprovante->servicos_id;
+            }
+
+            $comprovante->servicos = Servico::whereIn('id', $servicosIds)->get();
+
+            return $comprovante;
+        });
+
         return response()->json($comprovantes);
     }
 
-    public function store(Request $request)
+    public function show()
     {
-        $validatedData = $request->validate([
-            'user_id' => 'required|exists:users,id',
-            'anuncios_id' => 'nullable|exists:anuncios,id',
-            'servicos_id' => 'nullable|exists:servicos,id',
-        ]);
+        $user = auth()->user();
 
-        $comprovante = Comprovante::create($validatedData);
-        return response()->json($comprovante, 201);
-    }
 
-    public function show($id)
-    {
-        $comprovante = Comprovante::findOrFail($id);
-        return response()->json($comprovante);
+        $comprovantes = Comprovante::where('user_id', $user->id)->get();
+
+        $comprovantes->map(function ($comprovante) {
+            if (is_string($comprovante->servicos_id)) {
+                $servicosIds = json_decode($comprovante->servicos_id);
+            } else {
+                $servicosIds = $comprovante->servicos_id;
+            }
+
+            $comprovante->servicos = Servico::whereIn('id', $servicosIds)->get();
+
+            return $comprovante;
+        });
+
+        return response()->json($comprovantes);
+
     }
 
 }
-

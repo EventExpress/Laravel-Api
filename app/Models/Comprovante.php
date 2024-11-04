@@ -12,6 +12,10 @@ class Comprovante extends Model
 
     protected $fillable = ['user_id', 'anuncios_id', 'servicos_id'];
 
+    protected $casts = [
+        'servicos_id' => 'array',
+    ];
+
     public function user()
     {
         return $this->belongsTo(User::class);
@@ -25,6 +29,11 @@ class Comprovante extends Model
     public function servico()
     {
         return $this->belongsTo(Servico::class, 'servicos_id');
+    }
+
+    public function agendado()
+    {
+        return $this->belongsTo(Agendado::class);
     }
 }
 

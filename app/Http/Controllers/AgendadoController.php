@@ -98,104 +98,25 @@ class AgendadoController extends Controller
         DB::beginTransaction();
 
         try {
-            $validatedData = $request->validate([
-                'servicoId' => 'nullable|array',
-                'formapagamento' => 'required|string|max:50',
-                'data_inicio' => 'required|date',
-                'data_fim' => 'required|date|after_or_equal:data_inicio',
-            ]);
+            $validatedData = $this->validateRequest($request);
 
-            $dataInicio = $validatedData['data_inicio'];
-            $dataFim = $validatedData['data_fim'];
+            list($diasReservados, $inicio, $fim) = $this->calculateDays($validatedData);
 
-            $anuncio = Anuncio::findOrFail($anuncio_id);
-            $agenda = json_decode($anuncio->agenda, true) ?? [];
+            // Verificação de conflitos de reserva
+            $this->checkReservationConflict($anuncio_id, $inicio, $fim);
 
-            $datasIndisponiveis = collect($agenda)->map(function ($data) {
-                return date('Y-m-d', strtotime($data));
-            });
+            // Verificação de datas indisponíveis
+            $this->checkUnavailableDates($anuncio_id, $inicio, $fim);
 
-            if ($datasIndisponiveis->contains($dataInicio) || $datasIndisponiveis->contains($dataFim)) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'As datas selecionadas estão indisponíveis para reserva.',
-                ], 422);
-            }
+            $valorTotal = $this->calculateTotalValue($validatedData, $diasReservados, $anuncio_id);
 
-            // calcula a quantidade de dias da locação
-            $quantidadeDias = (new \DateTime($dataInicio))->diff(new \DateTime($dataFim))->days + 1; // +1 para incluir o último dia
+            $agendado = $this->createAgendado($validatedData, $anuncio_id, $valorTotal);
 
-            // calcula o valor total
-            $valorAnuncio = $anuncio->valor;
-            $valorTotalAnuncio = $valorAnuncio * $quantidadeDias;
+            $this->attachServices($agendado, $validatedData);
 
-            // soma valor dos serviços
-            $valorTotalServicos = 0;
-            if ($request->has('servicoId') && is_array($request->servicoId)) {
-                foreach ($request->servicoId as $servicoId) {
-                    $servico = Servico::find($servicoId);
-                    if ($servico) {
-                        $valorTotalServicos += $servico->valor * $quantidadeDias;
-                    }
-                }
-            }
-
-
-            $valorTotal = $valorTotalAnuncio + $valorTotalServicos;
-
-            $conflict = Agendado::where('anuncio_id', $anuncio_id)
-                ->where(function ($query) use ($dataInicio, $dataFim) {
-                    $query->where('data_inicio', '<=', $dataFim)
-                        ->where('data_fim', '>=', $dataInicio);
-                })
-                ->exists();
-
-            if ($conflict) {
-                Log::channel('logagendados')->warning('Conflito ao criar agendado', [
-                    'user_id' => Auth::id(),
-                    'anuncio_id' => $anuncio_id,
-                    'data_inicio' => $dataInicio,
-                    'data_fim' => $dataFim,
-                    'occurred_at' => now(),
-                ]);
-
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Este anúncio já está reservado para as datas selecionadas.',
-                ], 409);
-            }
-            Log::channel('logagendados')->info('Valor total calculado', [
-                'valor_total_anuncio' => $valorTotalAnuncio,
-                'valor_total_servicos' => $valorTotalServicos,
-                'valor_total' => $valorTotal,
-            ]);
-
-
-            $agendado = new Agendado();
-            $agendado->user_id = Auth::id();
-            $agendado->anuncio_id = $anuncio_id;
-            $agendado->formapagamento = $validatedData['formapagamento'];
-            $agendado->data_inicio = $dataInicio;
-            $agendado->data_fim = $dataFim;
-            $agendado->valor_total = $valorTotal;
-            $agendado->save();
-
-            if ($request->has('servicoId') && is_array($request->servicoId)) {
-                $agendado->servico()->attach($validatedData['servicoId']);
-            }
-
-            $this->createComprovante($agendado);
+            $this->createComprovante($agendado, $validatedData['servicoId']);
 
             DB::commit();
-
-            Log::channel('logagendados')->info('Reserva criada com sucesso', [
-                'agendado_id' => $agendado->id,
-                'user_id' => Auth::id(),
-                'created_at' => now(),
-                'data_inicio' => $dataInicio,
-                'data_fim' => $dataFim,
-                'valor_total' => $valorTotal,
-            ]);
 
             return response()->json([
                 'status' => true,
@@ -204,8 +125,18 @@ class AgendadoController extends Controller
                 'valor_total' => $valorTotal,
             ], 201);
 
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'status' => false,
+                'errors' => $e->errors(),
+            ], 422);
+
         } catch (\Exception $e) {
             DB::rollBack();
+            Log::channel('logagendados')->error('Erro ao criar a reserva', [
+                'message' => $e->getMessage(),
+                'data' => $request->all(),
+            ]);
             return response()->json([
                 'status' => false,
                 'message' => 'Erro ao criar a reserva: ' . $e->getMessage(),
@@ -213,15 +144,114 @@ class AgendadoController extends Controller
         }
     }
 
-    protected function createComprovante(Agendado $agendado)
+    protected function validateRequest(Request $request)
     {
-        $servicoId = $agendado->servico->first()->id ?? null;
-
-        return Comprovante::create([
-            'user_id' => $agendado->user_id,
-            'anuncios_id' => $agendado->anuncio_id,
-            'servicos_id' => $servicoId,
+        return $request->validate([
+            'servicoId' => 'nullable|array',
+            'formapagamento' => 'required|string|max:50',
+            'data_inicio' => 'required|date',
+            'data_fim' => 'required|date|after_or_equal:data_inicio',
         ]);
+    }
+
+    protected function calculateDays(array $validatedData): array
+    {
+        $inicio = $validatedData['data_inicio'];
+        $fim = $validatedData['data_fim'];
+        $diasReservados = (new \DateTime($inicio))->diff(new \DateTime($fim))->days + 1; // +1 para incluir o último dia
+
+        return [$diasReservados, $inicio, $fim];
+    }
+
+    protected function checkReservationConflict($anuncio_id, $inicio, $fim)
+    {
+        $conflict = Agendado::where('anuncio_id', $anuncio_id)
+            ->where(function ($query) use ($inicio, $fim) {
+                $query->where('data_inicio', '<=', $fim)
+                    ->where('data_fim', '>=', $inicio);
+            })
+            ->exists();
+
+        if ($conflict) {
+            throw new \Exception('Este anúncio já está reservado para as datas selecionadas.', 409);
+        }
+    }
+
+    protected function checkUnavailableDates($anuncio_id, $inicio, $fim)
+    {
+        $anuncio = Anuncio::findOrFail($anuncio_id);
+        $agenda = json_decode($anuncio->agenda, true) ?? [];
+        $datasIndisponiveis = collect($agenda)->map(fn($data) => date('Y-m-d', strtotime($data)));
+
+        if ($datasIndisponiveis->contains($inicio) || $datasIndisponiveis->contains($fim)) {
+            throw new \Exception('As datas selecionadas estão indisponíveis para reserva.', 422);
+        }
+    }
+
+    protected function calculateTotalValue(array $validatedData, int $diasReservados, $anuncio_id)
+    {
+        $anuncio = Anuncio::findOrFail($anuncio_id);
+        $valorAnuncio = $anuncio->valor;
+        $valorTotalAnuncio = $valorAnuncio * $diasReservados;
+
+        $valorTotalServicos = 0;
+        if (isset($validatedData['servicoId']) && is_array($validatedData['servicoId'])) {
+            foreach ($validatedData['servicoId'] as $servicoId) {
+                $servico = Servico::find($servicoId);
+                if ($servico) {
+                    $valorTotalServicos += $servico->valor * $diasReservados;
+                }
+            }
+        }
+
+        return $valorTotalAnuncio + $valorTotalServicos;
+    }
+
+    protected function createAgendado(array $validatedData, $anuncio_id, $valorTotal)
+    {
+        $agendado = new Agendado();
+        $agendado->user_id = Auth::id();
+        $agendado->anuncio_id = $anuncio_id;
+        $agendado->formapagamento = $validatedData['formapagamento'];
+        $agendado->data_inicio = $validatedData['data_inicio'];
+        $agendado->data_fim = $validatedData['data_fim'];
+        $agendado->valor_total = $valorTotal;
+        $agendado->save();
+
+        return $agendado;
+    }
+
+    protected function attachServices(Agendado $agendado, array $validatedData)
+    {
+        if (isset($validatedData['servicoId']) && is_array($validatedData['servicoId'])) {
+            $agendado->servicos()->attach($validatedData['servicoId']);
+        }
+    }
+
+    protected function createComprovante(Agendado $agendado, $servicoIds)
+    {
+        try {
+            // Certifica-se de que $servicoIds é um array
+            if (!is_array($servicoIds)) {
+                throw new \InvalidArgumentException('O parâmetro $servicoIds deve ser um array.');
+            }
+
+            // Log para verificar os IDs dos serviços
+            \Log::info('Serviço IDs: ' . json_encode($servicoIds));
+
+            // Armazena os IDs como um array no banco de dados
+            $comprovante = Comprovante::create([
+                'user_id' => $agendado->user_id,
+                'anuncios_id' => $agendado->anuncio_id,
+                'servicos_id' => $servicoIds, // Armazena como um array diretamente
+            ]);
+
+            \Log::info('Comprovante criado com sucesso: ', $comprovante->toArray());
+            return $comprovante;
+        } catch (\Exception $e) {
+            \Log::error('Erro ao criar comprovante: ' . $e->getMessage() . ' | Serviço IDs: ' . json_encode($servicoIds));
+            return null;
+        }
     }
 
     public function show(Request $request)
@@ -295,12 +325,15 @@ class AgendadoController extends Controller
         DB::beginTransaction();
 
         try {
-
             $validatedData = $request->validate([
                 'servicoId' => 'nullable|array',
                 'formapagamento' => 'sometimes|required|string|max:50',
                 'data_inicio' => 'sometimes|required|date',
                 'data_fim' => 'sometimes|required|date|after_or_equal:data_inicio',
+                'servicos_data' => 'sometimes|nullable|array',
+                'servicos_data.*.id' => 'sometimes|nullable|exists:servicos,id',
+                'servicos_data.*.data_inicio' => 'sometimes|nullable|date|after_or_equal:data_inicio',
+                'servicos_data.*.data_fim' => 'sometimes|nullable|date|after_or_equal:servicos_data.*.data_inicio',
             ]);
 
             $user = Auth::user();
@@ -341,27 +374,33 @@ class AgendadoController extends Controller
                 $agendado->data_fim = $validatedData['data_fim'];
             }
 
+            // Calcular a quantidade de dias reservados para o anúncio
             $quantidadeDias = (new \DateTime($agendado->data_inicio))->diff(new \DateTime($agendado->data_fim))->days + 1; // +1 para incluir o último dia
             $valorAnuncio = $anuncio->valor;
             $valorTotalAnuncio = $valorAnuncio * $quantidadeDias;
 
+            // Calcular o valor total dos serviços adicionais
             $valorTotalServicos = 0;
-            if ($request->has('servicoId') && is_array($request->servicoId)) {
-                foreach ($request->servicoId as $servicoId) {
-                    $servico = Servico::find($servicoId);
+            if (isset($validatedData['servicos_data']) && is_array($validatedData['servicos_data'])) {
+                foreach ($validatedData['servicos_data'] as $servicoData) {
+                    $servico = Servico::find($servicoData['id']);
                     if ($servico) {
-                        $valorTotalServicos += $servico->valor;
+                        // Calcular a quantidade de dias para cada serviço
+                        $diasServicos = (new \DateTime($servicoData['data_inicio']))->diff(new \DateTime($servicoData['data_fim']))->days + 1; // +1 para incluir o último dia
+                        $valorTotalServicos += $servico->valor * $diasServicos; // Adiciona o valor do serviço multiplicado pelos dias
                     }
                 }
             }
 
+            // Calcular o valor total
             $valorTotal = $valorTotalAnuncio + $valorTotalServicos;
             $agendado->valor_total = $valorTotal;
 
             $agendado->save();
 
-            if ($request->has('servicoId') && is_array($request->servicoId)) {
-                $agendado->servico()->sync($validatedData['servicoId']);
+            // Sincronizar os serviços contratados
+            if (isset($validatedData['servicoId']) && is_array($validatedData['servicoId'])) {
+                $agendado->servicos()->sync($validatedData['servicoId']);
             }
 
             DB::commit();
@@ -387,6 +426,8 @@ class AgendadoController extends Controller
             ], 500);
         }
     }
+
+
 
     public function destroy($id)
     {

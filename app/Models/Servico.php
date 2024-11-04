@@ -32,9 +32,10 @@ class Servico extends Model
         return $this->morphMany(Avaliacao::class, 'avaliavel');
     }
 
-
-    public function agendados()
+    public function agendado()
     {
-        return $this->belongsToMany(Agendado::class, 'agendado_servico', 'servico_id', 'agendado_id');
+        return $this->belongsToMany(Agendado::class, 'agendado_servico')
+            ->withPivot('data_inicio', 'data_fim')
+            ->withTimestamps();
     }
 }
