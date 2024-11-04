@@ -102,19 +102,17 @@ class AgendadoController extends Controller
 
             list($diasReservados, $inicio, $fim) = $this->calculateDays($validatedData);
 
-            // Verificação de conflitos de reserva
             $this->checkReservationConflict($anuncio_id, $inicio, $fim);
 
-            // Verificação de datas indisponíveis
             $this->checkUnavailableDates($anuncio_id, $inicio, $fim);
 
             $valorTotal = $this->calculateTotalValue($validatedData, $diasReservados, $anuncio_id);
 
             $agendado = $this->createAgendado($validatedData, $anuncio_id, $valorTotal);
 
-            $this->attachServices($agendado, $validatedData);
+            $this->attachServices($agendado, $validatedData['servicoId'] ?? []);
 
-            $this->createComprovante($agendado, $validatedData['servicoId']);
+            $this->createComprovante($agendado, $validatedData['servicoId'] ?? []);
 
             DB::commit();
 
@@ -427,8 +425,6 @@ class AgendadoController extends Controller
         }
     }
 
-
-
     public function destroy($id)
     {
         $user = Auth::user();
@@ -473,5 +469,3 @@ class AgendadoController extends Controller
     }
 
 }
-
-
