@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\Categoria;
 use App\Models\Nome;
 use App\Models\Anuncio;
+use App\Models\Servico;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use App\Models\User;
 use Illuminate\Database\Seeder;
@@ -21,6 +22,7 @@ class DatabaseSeeder extends Seeder
 
         try {
             Anuncio::factory()->create();
+            Servico::factory()->create();
             //Agendado::factory()->create();
 
             DB::commit();

@@ -2,7 +2,8 @@
 
 namespace Database\Factories;
 
-use App\Models\Categoria;
+use App\Models\Avaliacao;
+use App\Models\Scategoria;
 use App\Models\Servico;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -31,5 +32,23 @@ class ServicoFactory extends Factory
             'valor'=> $this->faker->randomFloat(2, 10, 1000),
             'agenda' => json_encode(['data' => '2025-09-18']),
         ];
+    }
+
+    public function configure()
+    {
+        return $this->afterCreating(function (Servico $servico) {
+            // Seleciona categorias aleatórias para associar ao anúncio
+            $scategorias = Scategoria::inRandomOrder()->take(rand(1, 3))->pluck('id');
+            $servico->scategorias()->attach($scategorias);
+
+            $usuarioId = User::inRandomOrder()->first()->id; // Obtém um usuário aleatório
+
+            // Cria uma avaliação associada a esse usuário
+            $avaliacao = Avaliacao::factory()->make(); // Cria uma avaliação
+            $avaliacao->avaliavel_type = "Servico"; // Define o tipo polimórfico
+            $avaliacao->avaliavel_id = $servico->id; // Associa à ID do anúncio
+            $avaliacao->user_id = $usuarioId; // Associa o ID do usuário que fez a avaliação
+            $avaliacao->save(); // Salva a avaliação
+        });
     }
 }

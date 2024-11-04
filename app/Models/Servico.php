@@ -37,4 +37,8 @@ class Servico extends Model
     {
         return $this->belongsToMany(Agendado::class, 'agendado_servico', 'servico_id', 'agendado_id');
     }
+
+    public function scategorias() {
+        return $this->belongsToMany(Scategoria::class, 'servico_scategoria', 'servico_id', 'scategoria_id');
+    }
 }

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Models\Servico;
+use App\Models\Scategoria;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -18,6 +19,12 @@ class ServicoController extends Controller
             'status' => true,
             'servicos' => $servicos,
         ], 200);
+    }
+
+    public function apresentaScategoriaServico()
+    {
+        $scategoria = Scategoria::all();
+        return response()->json(['scategorias' => $scategoria], 200);
     }
 
     public function meusServicos()
@@ -63,6 +70,7 @@ class ServicoController extends Controller
             'bairro' => 'required|string|min:3|max:255',
             'descricao' => 'required|string|min:10|max:2000',
             'valor' => 'required|numeric|min:0',
+            'scategoriaId' => 'required|array',
             'agenda' => 'nullable|array',
             'agenda.*' => 'date',
         ]);
@@ -83,6 +91,8 @@ class ServicoController extends Controller
         }
 
         $servico->save();
+
+        $servico->scategorias()->attach($validatedData['scategoriaId']);
 
         if (!$servico) {
             return response()->json([
@@ -142,6 +152,7 @@ class ServicoController extends Controller
             'cidade' => 'sometimes|required|string|min:3|max:255',
             'bairro' => 'sometimes|required|string|min:3|max:255',
             'descricao' => 'sometimes|required|string|min:10|max:2000',
+            'scategoriaId' => 'sometimes|required|array',
             'agenda' => 'nullable|array',
         ]);
 
@@ -164,6 +175,10 @@ class ServicoController extends Controller
         ], function ($value) {
             return !is_null($value);
         }));
+
+        if (isset($validatedData['scategoriaId'])) {
+            $servico->scategorias()->sync($validatedData['scategoriaId']);
+        }
 
         return response()->json([
             'status' => true,
