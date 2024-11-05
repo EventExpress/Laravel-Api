@@ -27,7 +27,8 @@ class ScategoriaSeeder extends Seeder
             ['titulo' => 'Fotografia e Filmagem', 'descricao' => 'Categoria para serviços de registro fotográfico e filmagem de eventos.'],
             ['titulo' => 'Iluminação Especial', 'descricao' => 'Categoria para serviços de iluminação decorativa e técnica para eventos.'],
             ['titulo' => 'Locação de Mobiliário', 'descricao' => 'Categoria para locação de mesas, cadeiras e outros móveis para eventos.'],
-            ['titulo' => 'Serviços de Limpeza', 'descricao' => 'Categoria para serviços de limpeza antes, durante e após os eventos.']
+            ['titulo' => 'Serviços de Limpeza', 'descricao' => 'Categoria para serviços de limpeza antes, durante e após os eventos.'],
+            ['titulo' => 'Entreterimento', 'descricao' => 'Categoria para serviços de entreterimento para eventos.']
         ];
 
         foreach ($scategorias as $scategoria) {
