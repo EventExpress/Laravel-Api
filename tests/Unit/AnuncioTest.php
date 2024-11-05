@@ -461,11 +461,8 @@ test('excluir anuncio com sucesso', function () {
                  'status' => true,
                  'message' => 'Anúncio excluído com sucesso.',
              ]);
-
-    
-    $this->assertDatabaseMissing('anuncios', [
-        'id' => $anuncio->id,
-        'titulo' => 'Festa de Aniversário',
+    $this->assertSoftDeleted('anuncios', [
+                'id' => $anuncio->id,
     ]);
 
 });

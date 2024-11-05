@@ -57,7 +57,6 @@ it('deletar anuncio como admin', function () {
 
     $response->assertStatus(200)
              ->assertJson(['message' => 'Anúncio deletado com sucesso!']);
-    //$this->assertSoftDeleted('anuncios', ['id' => $anuncio->id]);
 });
 
 
@@ -101,8 +100,8 @@ it('deletar e restaurar usuário como admin', function () {
     $this->assertDatabaseHas('users', ['id' => $user->id, 'deleted_at' => null]);
 
 });
-/*
-it('deletar e restaurar anuncio como admin', function () {
+
+/*it('deletar e restaurar anuncio como admin', function () {
     $this->seed(TypeUserSeeder::class);
 
     $admin = User::factory()->create();
@@ -119,14 +118,13 @@ it('deletar e restaurar anuncio como admin', function () {
 
     $response->assertStatus(200)
              ->assertJson(['message' => 'Anúncio deletado com sucesso!']);
-    $this->assertSoftDeleted('anuncios', ['id' => $anuncio->id]);
 
     $restoreResponse = $this->patchJson("/api/admin/anuncios/restore/{$anuncio->id}");
     $restoreResponse->assertStatus(200)->assertJson(['message' => 'Anúncio restaurado com sucesso!']);
     $this->assertDatabaseHas('anuncios', ['id' => $anuncio->id, 'deleted_at' => null]);
 
-});
-*/
+});*/
+
 it('deletar e restaurar servico como admin', function () {
     $this->seed(TypeUserSeeder::class);
 

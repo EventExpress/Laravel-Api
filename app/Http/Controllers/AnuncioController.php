@@ -348,7 +348,6 @@ class AnuncioController extends Controller
         DB::beginTransaction();
         try {
             $anuncio->delete();
-            $anuncio->endereco()->delete();
 
             DB::commit();
 
