@@ -15,7 +15,9 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->foreignId('anuncios_id')->nullable()->constrained('anuncios')->onDelete('set null');
-            $table->foreignId('servicos_id')->nullable()->constrained('servicos')->onDelete('set null');
+            $table->json('servicos_id')->nullable();
+
+
             $table->timestamps();
         });
     }

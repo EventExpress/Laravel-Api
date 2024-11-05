@@ -1,9 +1,10 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Dashboards;
 
-use App\Models\Categoria;
+use App\Http\Controllers\Controller;
 use App\Models\Agendado;
+use App\Models\Categoria;
 use App\Models\Servico;
 
 class DashboardController extends Controller

@@ -1,16 +1,16 @@
 <?php
 
+use App\Http\Controllers\AdminController;
+use App\Http\Controllers\AgendadoController;
+use App\Http\Controllers\AnuncioController;
+use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ComprovanteController;
-use App\Http\Controllers\DashboardAdmin;
-use App\Http\Controllers\DashboardController;
-use App\Http\Middeleware\AdminAccess;
+use App\Http\Controllers\Dashboards\DashboardAdminController;
+use App\Http\Controllers\Dashboards\DashboardController;
 use App\Http\Controllers\RecoverPasswordCodeController;
 use App\Http\Controllers\ServicoController;
-use App\Http\Controllers\AgendadoController;
-use App\Http\Controllers\AdminController;
-use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserController;
-use App\Http\Controllers\AnuncioController;
+use App\Http\Middeleware\AdminAccess;
 use Illuminate\Support\Facades\Route;
 
 // Rotas públicas (registro e login)
@@ -67,9 +67,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/verifica-agenda/{id}', [AnuncioController::class, 'verificarDisponibilidade']);
 
-    Route::get('/comprovantes', [ComprovanteController::class, 'index']);
-    Route::post('/comprovantes', [ComprovanteController::class, 'store']);
-    Route::get('/comprovantes/{id}', [ComprovanteController::class, 'show']);
+    Route::get('/comprovantes/show', [ComprovanteController::class, 'show']);
 
 
 //Rotas para preencher os relatórios
@@ -102,6 +100,9 @@ Route::middleware(['auth:sanctum', 'AdminAccess'])->group(function () {
 
     Route::delete('/admin/anuncios/{id}', [AdminController::class, 'destroyAnuncio']);
 
-    Route::get('/dashboard/locacoes', [DashboardAdmin::class, 'getLocacoesPorMes']);
+//Dashboard Admin
+    Route::get('/dashboard/locacoes', [DashboardAdminController::class, 'getLocacoesPorMes']);
+    Route::get('/dashboard/lucros', [DashboardAdminController::class, 'getLucrosPorMes']);
+    Route::get('/dashboard/usuarios-mensais', [DashboardAdminController::class, 'getUsuariosPorMes']);
 
 });

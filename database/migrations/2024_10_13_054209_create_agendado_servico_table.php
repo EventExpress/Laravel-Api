@@ -13,10 +13,10 @@ class CreateAgendadoServicoTable extends Migration
     {
         Schema::create('agendado_servico', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('agendado_id');
-            $table->unsignedBigInteger('servico_id');
-            $table->foreign('agendado_id')->references('id')->on('agendados')->onDelete('cascade');
-            $table->foreign('servico_id')->references('id')->on('servicos')->onDelete('cascade');
+            $table->foreignId('agendado_id')->constrained()->onDelete('cascade');
+            $table->foreignId('servico_id')->constrained()->onDelete('cascade');
+            $table->date('data_inicio')->nullable();
+            $table->date('data_fim')->nullable();
             $table->timestamps();
         });
     }

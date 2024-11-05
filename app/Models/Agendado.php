@@ -19,6 +19,9 @@ class Agendado extends Model
         'formapagamento',
         'data_inicio',
         'data_fim',
+        'valor_total',
+        'servico_data_inicio',
+        'servico_data_fim'
     ];
 
     public function anuncio()
@@ -26,9 +29,10 @@ class Agendado extends Model
         return $this->belongsTo(Anuncio::class);
     }
 
-    public function servico()
+    public function servicos()
     {
-        return $this->belongsToMany(Servico::class, 'agendado_servico', 'agendado_id', 'servico_id');
+        return $this->belongsToMany(Servico::class, 'agendado_servico', 'agendado_id', 'servico_id')
+            ->withPivot('data_inicio', 'data_fim');
     }
 
     public function user()

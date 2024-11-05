@@ -17,6 +17,7 @@ return new class extends Migration
             $table->foreignId('anuncio_id')->constrained()->onDelete('cascade');
             $table->softDeletes();
             $table->enum('formapagamento', ['cartao_credito', 'cartao_debito', 'pix', 'boleto', 'transferencia']);
+            $table->decimal('valor_total', 10, 2)->nullable();
             $table->datetime('data_inicio');
             $table->datetime('data_fim');
             $table->timestamps();
