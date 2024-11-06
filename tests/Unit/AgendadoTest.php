@@ -343,10 +343,8 @@ test('Pesquisar reserva futura', function () {
                  'message' => 'Reserva criada com sucesso.',
              ]);
 
-    $response = $this->getJson('/api/agendados?search=2024-11-10');
-    if ($response->status() !== 200) {
-        dd($response->json()); // Depuração: exibe a resposta para entender o erro
-    }
+    $response = $this->getJson("/api/agendados/{$anuncio->id}?search=2024-11-10");
+
     $response->assertStatus(200)
              ->assertJson(['status' => true])
              ->assertJsonFragment(['data_inicio' => '2024-11-10 00:00:00']);
@@ -395,12 +393,11 @@ test('Pesquisar reserva passada', function () {
                  'message' => 'Reserva criada com sucesso.',
              ]);
 
-    $response = $this->getJson('/api/agendados?search=2023-10-10');
+    $response = $this->getJson("/api/agendados/{$anuncio->id}?search=2023-10-10");
     $response->assertStatus(200)
              ->assertJson(['status' => true])
              ->assertJsonFragment(['data_inicio' => '2023-10-10 00:00:00']);
 });
-
 
 test('cancelar reserva com sucesso', function () {
     $user = User::factory()->create();

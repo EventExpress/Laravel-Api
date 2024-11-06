@@ -41,7 +41,7 @@ class AgendadoFactory extends Factory
     {
         return $this->afterCreating(function (Agendado $agendado) {
             $servico = Servico::inRandomOrder()->first();
-            $agendado->servico()->attach($servico->id);
+            $agendado->servicos()->attach($servico->id);
         });
     }
 }

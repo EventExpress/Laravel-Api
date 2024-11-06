@@ -127,13 +127,6 @@ class AgendadoController extends Controller
                 'status' => false,
                 'errors' => $e->errors(),
             ], 422);
-
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            return response()->json([
-                'status' => false,
-                'errors' => $e->errors(),
-            ], 422);
-
         } catch (\Exception $e) {
             DB::rollBack();
             Log::channel('logagendados')->error('Erro ao criar a reserva', [

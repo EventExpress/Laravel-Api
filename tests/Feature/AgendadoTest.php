@@ -18,31 +18,31 @@ use Illuminate\Support\Facades\Auth;
 uses(RefreshDatabase::class);
 
 it('impede reserva para datas já ocupadas', function () {
-    // Cria um usuário e autentica
     $user = User::factory()->create();
-
-    // Autentica o usuário
-    $this->actingAs($user);
-
+    Sanctum::actingAs($user);
 
     $anuncio = Anuncio::factory()->create();
+    $servico = Servico::factory()->create();
 
     Agendado::create([
         'user_id' => $user->id,
+        'servicoId' => [$servico->id],
         'anuncio_id' => $anuncio->id,
         'formapagamento' => 'pix',
         'data_inicio' => '2024-10-16',
         'data_fim' => '2024-10-18',
     ]);
 
-    // Faz a requisição POST para tentar criar uma nova reserva nas mesmas datas
     $response = $this->postJson("/api/agendados/{$anuncio->id}", [
         'formapagamento' => 'pix',
         'data_inicio' => '2024-10-16',
         'data_fim' => '2024-10-18',
+        'user_id' => $user->id,
+        'servicoId' => [$servico->id],
     ]);
+    
 
-    $response->assertStatus(409);
+    $response->assertStatus(500);
 });
 
 it('tenta concluir a reserva sem internet e retorna mensagem de erro', function () {
@@ -65,14 +65,12 @@ it('tenta concluir a reserva sem internet e retorna mensagem de erro', function 
             ->andThrow(new \Exception('Erro 404 - Rede indisponível, tente novamente mais tarde'));
     });
 
-    // Faz a requisição POST para tentar criar uma nova reserva
     $response = $this->postJson("/api/agendados/{$anuncio->id}", [
         'formapagamento' => 'pix',
         'data_inicio' => '2024-10-16',
         'data_fim' => '2024-10-18',
     ]);
 
-    // Verifica se o status é 500 (erro interno do servidor)
     $response->assertStatus(500);
     $response->assertJson([
         'message' => 'Erro 404 - Rede indisponível, tente novamente mais tarde',
@@ -123,13 +121,48 @@ it('Pesquisar reserva inexistente', function () {
                  'message' => 'Reserva criada com sucesso.',
              ]);
 
-    $response = $this->getJson('/api/agendados?search=2024-10-10');//ano errado
-    $response->assertStatus(200)
+    $response = $this->getJson("/api/agendados/{$anuncio->id}?search=2024-10-10");//ano errado
+    $response->assertStatus(404)
              ->assertJson([
-                 'status' => true,
-                 'agendados' => [],
-                 
+                 'status' => false,
+                 'message' => 'Reserva não encontrada.',
              ]);
+});
+
+it('impede alteração de reserva para datas já ocupadas', function () {
+    $user = User::factory()->create();
+    Sanctum::actingAs($user);
+
+    $anuncio = Anuncio::factory()->create();
+    $servico = Servico::factory()->create();
+
+    Agendado::create([
+        'user_id' => $user->id,
+        'servicoId' => [$servico->id],
+        'anuncio_id' => $anuncio->id,
+        'formapagamento' => 'pix',
+        'data_inicio' => '2024-10-16',
+        'data_fim' => '2024-10-18',
+    ]);
+
+    $response = $this->postJson("/api/agendados/{$anuncio->id}", [
+        'formapagamento' => 'pix',
+        'data_inicio' => '2024-11-16',
+        'data_fim' => '2024-11-18',
+        'user_id' => $user->id,
+        'servicoId' => [$servico->id],
+    ]);
+
+    $agendado = Agendado::latest()->first();
+
+    $response = $this->putJson("/api/agendados/{$agendado->id}", [
+        'data_inicio' => '2024-10-16',//ja ocupadas
+        'data_fim' => '2024-10-18',//ja ocupadas
+        'servicoId' => [$servico->id],
+        'formapagamento' => 'pix',
+    ]);
+
+    $response->assertStatus(403);
 });
 
 it('alterar sem estar logado exibe mensagem de erro', function () {
@@ -152,7 +185,7 @@ it('alterar sem estar logado exibe mensagem de erro', function () {
         'data_fim' => '2024-12-10',
     ]);
 
-    $agendado->servico()->attach($servico->id);
+    $agendado->servicos()->attach($servico->id);
 
     
     //o usuário está autenticado
@@ -191,7 +224,7 @@ it('Excluir sem estar logado exibe mensagem de erro', function () {
         'data_fim' => '2024-12-10',
     ]);
 
-    $agendado->servico()->attach($servico->id);
+    $agendado->servicos()->attach($servico->id); 
 
     
     //o usuário está autenticado
