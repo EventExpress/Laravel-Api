@@ -32,8 +32,6 @@ class DashboardController extends Controller
         return response()->json($agendadosPorMes);
     }
 
-//relatorioCategoriasMaisReservadasServico
-
     public function relatorioCategoriasMaisReservadas() // tive que fazer a consulta manualmente pois não consegui acessar a tabela servico_cateogoria
     {
         // Obter a contagem de categorias por serviços
@@ -126,9 +124,5 @@ class DashboardController extends Controller
             'lucro' => $lucro,
         ]);
     }
-
-
-
-
 
 }
