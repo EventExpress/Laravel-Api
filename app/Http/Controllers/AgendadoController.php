@@ -176,14 +176,20 @@ class AgendadoController extends Controller
     protected function checkUnavailableDates($anuncio_id, $inicio, $fim)
     {
         $anuncio = Anuncio::findOrFail($anuncio_id);
+
         $agenda = json_decode($anuncio->agenda, true) ?? [];
-        $datasIndisponiveis = collect($agenda)->map(fn($data) => date('Y-m-d', strtotime($data)));
+
+        $datasIndisponiveis = collect($agenda)->map(function ($data) {
+            return date('Y-m-d', strtotime($data));
+        });
+
+        $inicio = date('Y-m-d', strtotime($inicio));
+        $fim = date('Y-m-d', strtotime($fim));
 
         if ($datasIndisponiveis->contains($inicio) || $datasIndisponiveis->contains($fim)) {
             throw new \Exception('As datas selecionadas estão indisponíveis para reserva.', 422);
         }
     }
-
     protected function calculateTotalValue(array $validatedData, int $diasReservados, $anuncio_id)
     {
         $anuncio = Anuncio::findOrFail($anuncio_id);
