@@ -73,7 +73,9 @@ Route::middleware('auth:sanctum')->group(function () {
 //Rotas para preencher os relatórios
     Route::get('/dashboard/anuncios', [DashboardController::class, 'getAnuncios']);
     Route::get('/dashboard/agendados', [DashboardController::class, 'getAgendados']);
-    Route::get('/dashboard/servicos', [DashboardController::class, 'getServicos']);
+    Route::get('/dashboard/servicos', [DashboardController::class, 'relatorioCategoriasMaisReservadas']);
+    Route::get('/dashboard/reservas-mensais', [DashboardController::class, 'relatorioReservasMensais']);
+    Route::get('/dashboard/reservas-anuais', [DashboardController::class, 'relatorioReservasAnuais']);
 
 });
 
