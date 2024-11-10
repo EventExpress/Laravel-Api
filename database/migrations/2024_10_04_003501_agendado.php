@@ -18,6 +18,7 @@ return new class extends Migration
             $table->softDeletes();
             $table->enum('formapagamento', ['cartao_credito', 'cartao_debito', 'pix', 'boleto', 'transferencia']);
             $table->decimal('valor_total', 10, 2)->nullable();
+            $table->string('status_pagamento')->default('pendente');
             $table->datetime('data_inicio');
             $table->datetime('data_fim');
             $table->timestamps();

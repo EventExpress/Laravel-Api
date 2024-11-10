@@ -65,6 +65,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/agendados/{agendado_id}', [AgendadoController::class, 'update']);
     Route::delete('/agendados/{agendado_id}', [AgendadoController::class, 'destroy']);
 
+    Route::post('/agendados/{id}/aprovar-pagamento', [AgendadoController::class, 'aprovarPagamento'])->name('agendados.aprovarPagamento');
+
+
     Route::get('/verifica-agenda/{id}', [AnuncioController::class, 'verificarDisponibilidade']);
 
     Route::get('/comprovantes/show', [ComprovanteController::class, 'show']);

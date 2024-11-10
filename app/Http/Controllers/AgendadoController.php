@@ -102,7 +102,7 @@ class AgendadoController extends Controller
 
             list($diasReservados, $inicio, $fim) = $this->calculateDays($validatedData);
 
-            $this->checkReservationConflict($anuncio_id, $inicio, $fim);
+            $this->checkReservationConflict($anuncio_id, $request->data_inicio, $request->data_fim);
 
             $this->checkUnavailableDates($anuncio_id, $inicio, $fim);
 
@@ -161,11 +161,25 @@ class AgendadoController extends Controller
 
     protected function checkReservationConflict($anuncio_id, $inicio, $fim)
     {
+        $agendadoCancelado = Agendado::where('anuncio_id', $anuncio_id)
+            ->where('status_pagamento', 'cancelado')
+            ->first();
+
+        if (!$agendadoCancelado) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Não é possível criar uma nova reserva, pois o pagamento não foi cancelado.',
+            ], 400);
+        }
+
+        // Verifica se já existe um agendado com as datas sobrepondo
         $conflict = Agendado::where('anuncio_id', $anuncio_id)
             ->where(function ($query) use ($inicio, $fim) {
+                // Verifica o conflito de datas do anúncio, excluindo os serviços
                 $query->where('data_inicio', '<=', $fim)
                     ->where('data_fim', '>=', $inicio);
             })
+            ->where('status_pagamento', '!=', 'cancelado')
             ->exists();
 
         if ($conflict) {
@@ -225,10 +239,34 @@ class AgendadoController extends Controller
 
     protected function attachServices(Agendado $agendado, array $validatedData)
     {
-        if (isset($validatedData['servicoId']) && is_array($validatedData['servicoId'])) {
-            $agendado->servicos()->attach($validatedData['servicoId']);
+        // Verifique se o campo 'servicoId' está definido e é um array
+        if (array_key_exists('servicoId', $validatedData) && is_array($validatedData['servicoId'])) {
+
+            // Preparando o array de serviços com as datas específicas para o attach
+            $servicosAttach = [];
+            foreach ($validatedData['servicos_data'] as $servicoData) {
+                $servicosAttach[$servicoData['id']] = [
+                    'data_inicio' => $servicoData['data_inicio'],
+                    'data_fim' => $servicoData['data_fim'],
+                ];
+            }
+
+            // Associando os serviços ao agendamento com as datas
+            $agendado->servicos()->attach($servicosAttach);
+
+            Log::info('Serviços associados:', $validatedData['servicoId']);
+
+            // Validação para verificar se os IDs dos serviços são válidos
+            foreach ($validatedData['servicoId'] as $servicoId) {
+                if (!Servico::find($servicoId)) {
+                    Log::warning('Serviço não encontrado', ['servico_id' => $servicoId]);
+                }
+            }
+        } else {
+            Log::warning('O campo servicoId está ausente ou não é um array', ['validatedData' => $validatedData]);
         }
     }
+
 
     protected function createComprovante(Agendado $agendado, $servicoIds)
     {
@@ -510,5 +548,30 @@ class AgendadoController extends Controller
             'message' => 'Reserva excluída com sucesso.',
         ], 200);
     }
+
+    public function aprovarPagamento($id)
+    {
+        $agendado = Agendado::findOrFail($id);
+
+        if ($this->mockPagamento($agendado)) {
+            $agendado->status_pagamento = 'aprovado';
+            $agendado->save();
+
+            return response()->json(['message' => 'Pagamento aprovado com sucesso!']);
+        }
+
+        return response()->json(['message' => 'Falha na aprovação do pagamento.'], 400);
+    }
+
+    private function mockPagamento($agendado)
+    {
+        $statusPagamento = 'sucesso';
+
+        \Log::channel('logagendados')->info("Pagamento para Agendado #{$agendado->id}: {$statusPagamento}");
+
+        return $statusPagamento === 'sucesso';
+    }
+
+
 
 }
