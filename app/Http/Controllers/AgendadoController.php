@@ -7,6 +7,7 @@ use App\Models\Agendado;
 use App\Models\Servico;
 use App\Models\Anuncio;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -110,7 +111,7 @@ class AgendadoController extends Controller
 
             $agendado = $this->createAgendado($validatedData, $anuncio_id, $valorTotal);
 
-            $this->attachServices($agendado, $validatedData['servicoId'] ?? []);
+            $this->attachServices($agendado, $request->servicos_data ?? []);
 
             $this->createComprovante($agendado, $validatedData['servicoId'] ?? []);
 
@@ -166,24 +167,17 @@ class AgendadoController extends Controller
             ->first();
 
         if (!$agendadoCancelado) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Não é possível criar uma nova reserva, pois o pagamento não foi cancelado.',
-            ], 400);
-        }
+            $conflict = Agendado::where('anuncio_id', $anuncio_id)
+                ->where(function ($query) use ($inicio, $fim) {
+                    $query->where('data_inicio', '<=', $fim)
+                        ->where('data_fim', '>=', $inicio);
+                })
+                ->where('status_pagamento', '!=', 'cancelado')
+                ->exists();
 
-        // Verifica se já existe um agendado com as datas sobrepondo
-        $conflict = Agendado::where('anuncio_id', $anuncio_id)
-            ->where(function ($query) use ($inicio, $fim) {
-                // Verifica o conflito de datas do anúncio, excluindo os serviços
-                $query->where('data_inicio', '<=', $fim)
-                    ->where('data_fim', '>=', $inicio);
-            })
-            ->where('status_pagamento', '!=', 'cancelado')
-            ->exists();
-
-        if ($conflict) {
-            throw new \Exception('Este anúncio já está reservado para as datas selecionadas.', 409);
+            if ($conflict) {
+                throw new \Exception('Este anúncio já está reservado para as datas selecionadas.', 409);
+            }
         }
     }
 
@@ -204,25 +198,50 @@ class AgendadoController extends Controller
             throw new \Exception('As datas selecionadas estão indisponíveis para reserva.', 422);
         }
     }
+
     protected function calculateTotalValue(array $validatedData, int $diasReservados, $anuncio_id)
     {
+        // Obtenção do anúncio e cálculo do valor total
         $anuncio = Anuncio::findOrFail($anuncio_id);
         $valorAnuncio = $anuncio->valor;
         $valorTotalAnuncio = $valorAnuncio * $diasReservados;
 
+        // Inicialização do valor total dos serviços
         $valorTotalServicos = 0;
+
+        // Verificação se há serviços a serem processados
         if (isset($validatedData['servicoId']) && is_array($validatedData['servicoId'])) {
             foreach ($validatedData['servicoId'] as $servicoId) {
                 $servico = Servico::find($servicoId);
                 if ($servico) {
-                    $valorTotalServicos += $servico->valor * $diasReservados;
+                    // Verifica se 'servicos_data' não é nulo ou vazio
+                    $servicosData = $servico->servicos_data;
+                    if ($servicosData && is_array($servicosData)) {
+                        foreach ($servicosData as $servicoData) {
+                            // Calcula os dias reservados utilizando a função 'calculateDays'
+                            list($diasReservadosServico, $dataInicio, $dataFim) = $this->calculateDays([
+                                'data_inicio' => $servicoData['data_inicio'],
+                                'data_fim' => $servicoData['data_fim'],
+                            ]);
+
+                            // Verifica os valores
+                            \Log::info('Serviço ID: ' . $servico->id, [
+                                'diasReservados' => $diasReservadosServico,
+                                'valor_servico' => $servico->valor,
+                                'valor_total_servico' => $servico->valor * $diasReservadosServico
+                            ]);
+
+                            // Calcular o valor total para o serviço
+                            $valorTotalServicos += $servico->valor * $diasReservadosServico;
+                        }
+                    }
                 }
             }
         }
 
+        // Retorna a soma do valor do anúncio com os serviços
         return $valorTotalAnuncio + $valorTotalServicos;
     }
-
     protected function createAgendado(array $validatedData, $anuncio_id, $valorTotal)
     {
         $agendado = new Agendado();
@@ -237,56 +256,41 @@ class AgendadoController extends Controller
         return $agendado;
     }
 
-    protected function attachServices(Agendado $agendado, array $validatedData)
+    protected function attachServices(Agendado $agendado, array $servicosData)
     {
-        // Verifique se o campo 'servicoId' está definido e é um array
-        if (array_key_exists('servicoId', $validatedData) && is_array($validatedData['servicoId'])) {
+        if (empty($servicosData)) {
+            return;
+        }
 
-            // Preparando o array de serviços com as datas específicas para o attach
-            $servicosAttach = [];
-            foreach ($validatedData['servicos_data'] as $servicoData) {
-                $servicosAttach[$servicoData['id']] = [
+        $attachData = [];
+        foreach ($servicosData as $servicoData) {
+            if (isset($servicoData['id'], $servicoData['data_inicio'], $servicoData['data_fim'])) {
+                $attachData[$servicoData['id']] = [
                     'data_inicio' => $servicoData['data_inicio'],
                     'data_fim' => $servicoData['data_fim'],
                 ];
             }
+        }
 
-            // Associando os serviços ao agendamento com as datas
-            $agendado->servicos()->attach($servicosAttach);
-
-            Log::info('Serviços associados:', $validatedData['servicoId']);
-
-            // Validação para verificar se os IDs dos serviços são válidos
-            foreach ($validatedData['servicoId'] as $servicoId) {
-                if (!Servico::find($servicoId)) {
-                    Log::warning('Serviço não encontrado', ['servico_id' => $servicoId]);
-                }
-            }
-        } else {
-            Log::warning('O campo servicoId está ausente ou não é um array', ['validatedData' => $validatedData]);
+        // Realiza o attach com os dados extras para a tabela pivot
+        if (count($attachData) > 0) {
+            $agendado->servicos()->attach($attachData);
         }
     }
-
 
     protected function createComprovante(Agendado $agendado, $servicoIds)
     {
         try {
-            // Certifica-se de que $servicoIds é um array
             if (!is_array($servicoIds)) {
                 throw new \InvalidArgumentException('O parâmetro $servicoIds deve ser um array.');
             }
 
-            // Log para verificar os IDs dos serviços
-            \Log::info('Serviço IDs: ' . json_encode($servicoIds));
-
-            // Armazena os IDs como um array no banco de dados
             $comprovante = Comprovante::create([
                 'user_id' => $agendado->user_id,
                 'anuncios_id' => $agendado->anuncio_id,
-                'servicos_id' => $servicoIds, // Armazena como um array diretamente
+                'servicos_id' => $servicoIds,
             ]);
 
-            \Log::info('Comprovante criado com sucesso: ', $comprovante->toArray());
             return $comprovante;
         } catch (\Exception $e) {
             \Log::error('Erro ao criar comprovante: ' . $e->getMessage() . ' | Serviço IDs: ' . json_encode($servicoIds));

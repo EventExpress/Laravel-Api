@@ -39,6 +39,7 @@ class Servico extends Model
             ->withTimestamps();
     }
 
+
     public function scategorias() {
         return $this->belongsToMany(Scategoria::class, 'servico_scategoria', 'servico_id', 'scategoria_id');
     }

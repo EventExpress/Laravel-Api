@@ -31,8 +31,7 @@ class Agendado extends Model
 
     public function servicos()
     {
-        return $this->belongsToMany(Servico::class, 'agendado_servico', 'agendado_id', 'servico_id')
-            ->withPivot('data_inicio', 'data_fim');
+        return $this->belongsToMany(Servico::class, 'agendado_servico')->withPivot('data_inicio', 'data_fim');
     }
 
     public function user()
