@@ -61,6 +61,61 @@ class AgendadoController extends Controller
         ], 200);
     }
 
+    public function meusAnunciosAgendados()
+    {
+        $user = Auth::user();
+
+        if (!$user->typeUsers->contains('tipousu', 'Locador')) {
+            Log::channel('logagendados')->warning('Acesso negado a anúncios agendados', [
+                'user_id' => $user->id,
+                'reason' => 'Permissão negada',
+                'accessed_at' => now(),
+            ]);
+
+            return response()->json([
+                'status' => false,
+                'error' => 'Você não tem permissão para acessar anúncios agendados.'
+            ], 403);
+        }
+
+        $anunciosAgendados = Agendado::whereHas('anuncio', function ($query) use ($user) {
+            $query->where('user_id', $user->id);
+        })->with('anuncio', 'user')->get();
+
+        return response()->json([
+            'status' => true,
+            'anuncios_agendados' => $anunciosAgendados,
+        ], 200);
+    }
+
+    public function meusServicosAgendados()
+    {
+        $user = Auth::user();
+
+        if (!$user->typeUsers->contains('tipousu', 'Prestador')) {
+            Log::channel('logagendados')->warning('Acesso negado a serviços agendados', [
+                'user_id' => $user->id,
+                'reason' => 'Permissão negada',
+                'accessed_at' => now(),
+            ]);
+
+            return response()->json([
+                'status' => false,
+                'error' => 'Você não tem permissão para acessar serviços agendados.'
+            ], 403);
+        }
+
+        $servicosAgendados = Agendado::whereHas('servicos', function ($query) use ($user) {
+            $query->where('user_id', $user->id);
+        })->with('servicos', 'user')->get();
+
+        return response()->json([
+            'status' => true,
+            'servicos_agendados' => $servicosAgendados,
+        ], 200);
+    }
+
+
     public function create()
     {
         $user = Auth::user();
