@@ -196,13 +196,18 @@ class AgendadoController extends Controller
         }
     }
 
-    protected function validateRequest(Request $request)
+    public function validateRequest(Request $request)
     {
         return $request->validate([
-            'servicoId' => 'nullable|array',
-            'formapagamento' => 'required|string|max:50',
+            'servicoId' => 'required|array',
+            'servicoId.*' => 'integer|exists:servicos,id',
+            'formapagamento' => 'required|string',
             'data_inicio' => 'required|date',
             'data_fim' => 'required|date|after_or_equal:data_inicio',
+            'servicos_data' => 'required|array',
+            'servicos_data.*.id' => 'required|integer|exists:servicos,id',
+            'servicos_data.*.data_inicio' => 'required|date',
+            'servicos_data.*.data_fim' => 'required|date|after_or_equal:servicos_data.*.data_inicio',
         ]);
     }
 
@@ -256,47 +261,42 @@ class AgendadoController extends Controller
 
     protected function calculateTotalValue(array $validatedData, int $diasReservados, $anuncio_id)
     {
-        // Obtenção do anúncio e cálculo do valor total
         $anuncio = Anuncio::findOrFail($anuncio_id);
         $valorAnuncio = $anuncio->valor;
+
         $valorTotalAnuncio = $valorAnuncio * $diasReservados;
 
-        // Inicialização do valor total dos serviços
         $valorTotalServicos = 0;
 
-        // Verificação se há serviços a serem processados
         if (isset($validatedData['servicoId']) && is_array($validatedData['servicoId'])) {
-            foreach ($validatedData['servicoId'] as $servicoId) {
+            foreach ($validatedData['servicoId'] as $index => $servicoId) {
                 $servico = Servico::find($servicoId);
+
                 if ($servico) {
-                    // Verifica se 'servicos_data' não é nulo ou vazio
-                    $servicosData = $servico->servicos_data;
-                    if ($servicosData && is_array($servicosData)) {
-                        foreach ($servicosData as $servicoData) {
-                            // Calcula os dias reservados utilizando a função 'calculateDays'
-                            list($diasReservadosServico, $dataInicio, $dataFim) = $this->calculateDays([
-                                'data_inicio' => $servicoData['data_inicio'],
-                                'data_fim' => $servicoData['data_fim'],
-                            ]);
+                    $servicoData = isset($validatedData['servicos_data'][$index]) ? $validatedData['servicos_data'][$index] : null;
 
-                            // Verifica os valores
-                            \Log::info('Serviço ID: ' . $servico->id, [
-                                'diasReservados' => $diasReservadosServico,
-                                'valor_servico' => $servico->valor,
-                                'valor_total_servico' => $servico->valor * $diasReservadosServico
-                            ]);
+                    if ($servicoData) {
+                        $dataInicio = new \Carbon\Carbon($servicoData['data_inicio']);
+                        $dataFim = new \Carbon\Carbon($servicoData['data_fim']);
 
-                            // Calcular o valor total para o serviço
-                            $valorTotalServicos += $servico->valor * $diasReservadosServico;
-                        }
+                        // Ajusta as datas para considerar apenas o dia (sem hora)
+                        $dataInicio->startOfDay();
+                        $dataFim->startOfDay();
+
+                        $diasServico = $dataInicio->diffInDays($dataFim) + 1;
+
+
+                        $valorTotalServicos += $servico->valor * $diasServico;
                     }
                 }
             }
         }
 
-        // Retorna a soma do valor do anúncio com os serviços
-        return $valorTotalAnuncio + $valorTotalServicos;
+        $valorFinal = $valorTotalAnuncio + $valorTotalServicos;
+
+        return $valorFinal;
     }
+
     protected function createAgendado(array $validatedData, $anuncio_id, $valorTotal)
     {
         $agendado = new Agendado();
@@ -630,7 +630,6 @@ class AgendadoController extends Controller
 
         return $statusPagamento === 'sucesso';
     }
-
 
 
 }
