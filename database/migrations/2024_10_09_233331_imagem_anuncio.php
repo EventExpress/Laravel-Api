@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('imagem_anuncios', function (Blueprint $table) {
             $table->id();
             $table->foreignId('anuncio_id')->constrained()->onDelete('cascade');
-            $table->text('image_path');
+            $table->longText('image_path')->change();
             $table->boolean('is_main')->default(false);
             $table->timestamps();
         });

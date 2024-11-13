@@ -199,7 +199,7 @@ class AgendadoController extends Controller
     public function validateRequest(Request $request)
     {
         return $request->validate([
-            'servicoId' => 'required|array',
+            'servicoId' => 'array',
             'servicoId.*' => 'integer|exists:servicos,id',
             'formapagamento' => 'required|string',
             'data_inicio' => 'required|date',
