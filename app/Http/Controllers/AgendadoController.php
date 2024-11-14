@@ -115,6 +115,43 @@ class AgendadoController extends Controller
         ], 200);
     }
 
+    public function meusHistoricoAgendados()
+    {
+        $user = Auth::user();
+
+        if ($user->typeUsers->first()->tipousu !== 'Locatario') {
+            Log::channel('logagendados')->warning('Acesso negado ao histórico de agendamentos', [
+                'user_id' => $user->id,
+                'reason' => 'Permissão negada - apenas locatários podem acessar',
+                'accessed_at' => now(),
+            ]);
+
+            return response()->json([
+                'status' => false,
+                'error' => 'Acesso negado. Apenas locatários podem visualizar o histórico de agendamentos.'
+            ], 403);
+        }
+
+        $dataAtual = Carbon::now()->toDateString();
+
+        $agendadosHistorico = Agendado::where('user_id', $user->id)
+            ->where('data_fim', '<', $dataAtual)
+            ->with(['anuncio', 'servicos'])
+            ->get();
+
+        if ($agendadosHistorico->isEmpty()) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Nenhuma reserva encontrada no histórico.'
+            ], 404);
+        }
+
+        return response()->json([
+            'status' => true,
+            'historico_agendados' => $agendadosHistorico,
+        ], 200);
+    }
+
 
     public function create()
     {
