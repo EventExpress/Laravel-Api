@@ -14,7 +14,6 @@ class Servico extends Model
 
     protected $fillable =
     [
-        'titulo',
         'cidade',
         'bairro',
         'descricao',

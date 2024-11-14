@@ -56,10 +56,17 @@ test('incluir dados incompletos no formulario de reserva', function () {
     $servico = Servico::factory()->create();
 
     $response = $this->postJson("/api/agendados/{$anuncio->id}", [
-        'servicoId' => [$servico->id], // Corrigido para o nome esperado pelo controller
+        'servicoId' => [$servico->id], 
         'formapagamento' => '', // campo vazio
-        'data_inicio' => '2024-11-10',
-        'data_fim' => '2024-12-10',
+        'data_inicio' => '2024-12-10',
+        'data_fim' => '2024-12-11',
+        'servicos_data' => [
+            [
+                'id' => $servico->id,
+                'data_inicio' => '2024-12-10',
+                'data_fim' => '2024-12-11',
+            ]
+        ],
     ]);
 
     $response->assertStatus(422);
@@ -111,8 +118,15 @@ test('criar uma reserva corretamente', function () {
     $response = $this->postJson("/api/agendados/{$anuncio->id}", [
         'servicoId' => [$servico->id],
         'formapagamento' => 'pix',
-        'data_inicio' => '2024-11-10',
-        'data_fim' => '2024-12-10',
+        'data_inicio' => '2024-12-10',
+        'data_fim' => '2024-12-11',
+        'servicos_data' => [
+            [
+                'id' => $servico->id,
+                'data_inicio' => '2024-12-10',
+                'data_fim' => '2024-12-11',
+            ]
+        ],
     ]);
 
     $response->assertStatus(201)
@@ -160,8 +174,15 @@ test('atualizar reserva com sucesso', function () {
     $response = $this->postJson("/api/agendados/{$anuncio->id}", [
         'servicoId' => [$servico->id],
         'formapagamento' => 'pix',
-        'data_inicio' => '2024-11-10',
-        'data_fim' => '2024-12-10',
+        'data_inicio' => '2024-12-10',
+        'data_fim' => '2024-12-11',
+        'servicos_data' => [
+            [
+                'id' => $servico->id,
+                'data_inicio' => '2024-12-10',
+                'data_fim' => '2024-12-11',
+            ]
+        ],
     ]);
 
     $response->assertStatus(201)
@@ -177,6 +198,13 @@ test('atualizar reserva com sucesso', function () {
         'data_fim' => '2024-12-11',
         'servicoId' => [$servico->id],
         'formapagamento' => 'pix',
+        'servicos_data' => [
+            [
+                'id' => $servico->id,
+                'data_inicio' => '2024-11-20',
+                'data_fim' => '2024-12-11',
+            ]
+        ],
     ]);
 
     $response->assertStatus(200)
@@ -224,8 +252,15 @@ test('atualizar reserva sem sucesso', function () {
     $response = $this->postJson("/api/agendados/{$anuncio->id}", [
         'servicoId' => [$servico->id],
         'formapagamento' => 'pix',
-        'data_inicio' => '2024-11-10',
-        'data_fim' => '2024-12-10',
+        'data_inicio' => '2024-12-10',
+        'data_fim' => '2024-12-11',
+        'servicos_data' => [
+            [
+                'id' => $servico->id,
+                'data_inicio' => '2024-12-10',
+                'data_fim' => '2024-12-11',
+            ]
+        ],
     ]);
 
     $response->assertStatus(201)
@@ -238,9 +273,16 @@ test('atualizar reserva sem sucesso', function () {
 
     $response = $this->putJson("/api/agendados/{$agendado->id}", [
         'formapagamento' => 'pix',
-        'data_inicio' => '2024-11-20',
+        'data_inicio' => '2024-12-20',
         'data_fim' => '',
         'servicoId' => [$servico->id],
+        'servicos_data' => [
+            [
+                'id' => $servico->id,
+                'data_inicio' => '2024-12-20',
+                'data_fim' => '',
+            ]
+        ],
     ]);
 
     $response->assertStatus(422);
@@ -282,6 +324,13 @@ test('tentar editar reserva fora do prazo permitido', function () {
         'formapagamento' => 'pix',
         'data_inicio' => now()->addDays(1)->toDateString(), // Reserva para daqui 1 dias
         'data_fim' => now()->addDays(2)->toDateString(),
+        'servicos_data' => [
+            [
+                'id' => $servico->id,
+                'data_inicio' => now()->addDays(1)->toDateString(),
+                'data_fim' => now()->addDays(2)->toDateString(),
+            ]
+        ],
     ]);
 
     $agendado = Agendado::latest()->first();
@@ -291,6 +340,13 @@ test('tentar editar reserva fora do prazo permitido', function () {
         'data_fim' => '2024-10-11',
         'servicoId' => [$servico->id],
         'formapagamento' => 'pix',
+        'servicos_data' => [
+            [
+                'id' => $servico->id,
+                'data_inicio' => '2024-10-10',
+                'data_fim' => '2024-10-11',
+            ]
+        ],
     ]);
 
     $response->assertStatus(403)
@@ -335,6 +391,13 @@ test('Pesquisar reserva futura', function () {
         'formapagamento' => 'pix',
         'data_inicio' => '2024-11-10',
         'data_fim' => '2024-12-10',
+        'servicos_data' => [
+            [
+                'id' => $servico->id,
+                'data_inicio' => '2024-11-10',
+                'data_fim' => '2024-12-10',
+            ]
+        ],
     ]);
 
     $response->assertStatus(201)
@@ -385,6 +448,14 @@ test('Pesquisar reserva passada', function () {
         'formapagamento' => 'pix',
         'data_inicio' => '2023-10-10', // Reserva passada
         'data_fim' => '2023-11-10',    // Reserva passada
+        'servicos_data' => [
+            [
+                'id' => $servico->id,
+                'data_inicio' => '2023-10-10',
+                'data_fim' => '2024-11-10',
+            ]
+        ],
+        
     ]);
 
     $response->assertStatus(201)
@@ -437,8 +508,15 @@ test('cancelar reserva com sucesso', function () {
     $response = $this->postJson("/api/agendados/{$anuncio->id}", [
         'servico_id' => [$servico->id],
         'formapagamento' => 'pix',
-        'data_inicio' => '2024-11-10',
-        'data_fim' => '2024-12-10',
+        'data_inicio' => '2024-12-10',
+        'data_fim' => '2024-12-11',
+        'servicos_data' => [
+            [
+                'id' => $servico->id,
+                'data_inicio' => '2024-12-10',
+                'data_fim' => '2024-12-11',
+            ]
+        ],
     ]);
 
     $response->assertStatus(201)
@@ -493,6 +571,13 @@ test('tentar cancelar reserva fora do prazo permitido', function () {
         'formapagamento' => 'pix',
         'data_inicio' => now()->addDays(2)->toDateString(), // Reserva para daqui 3 dias
         'data_fim' => now()->addDays(3)->toDateString(),
+        'servicos_data' => [
+            [
+                'id' => $servico->id,
+                'data_inicio' => now()->addDays(2)->toDateString(),
+                'data_fim' => now()->addDays(3)->toDateString(),
+            ]
+        ],
     ]);
 
     $agendado = Agendado::latest()->first();

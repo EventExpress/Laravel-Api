@@ -41,12 +41,12 @@ test('cadastro de novo anuncio com todos os campos corretamente', function () {
         'capacidade' => 100,
         'descricao' => 'Um local perfeito para festas de casamento.',
         'valor' => 2000,
-        'agenda' => ['data' => '2025-09-18'],
+        'agenda' => ['2025-09-18'],
         'categoriaId' => [$categorias[0]->id, $categorias[1]->id],
         'imagens' => $imagens,
         
     ]);
-
+    
     $response->assertStatus(201)
              ->assertJson([
                  'status' => true,

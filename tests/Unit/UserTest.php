@@ -291,6 +291,46 @@ test('Alterar usuário sem sucesso', function (){
     $response->assertJsonValidationErrors(['nome']);
 });
 
+test('Tentar alterar usuário para e-mail ja registrado', function () {
+    //cria usuario com o e-mail especifico
+    $Uemail = User::factory()->create([
+        'email' => 'testeu@gmail.com',
+    ]);
+
+    $user = User::factory()->create([
+        'email' => 'testeusu@gmail.com',
+    ]);
+
+    Sanctum::actingAs($user);
+
+    $response = $this->putJson("/api/user/{$user->id}", [
+        'nome' => 'TesteAtualizado',
+        'sobrenome' => 'UsuárioAtualizado',
+        'telefone' => '41988976119',
+        'datanasc' => '2003-02-13',
+        'email' => 'testeu@gmail.com',//e-mail duplicado
+        'password' => 'senhaAtualizada123',
+        'password_confirmation' => 'senhaAtuaizada123',
+        'tipousu' => ['Locatario'],
+        'cpf' => '13232143212',
+        'cnpj' => '',
+        'cidade' => 'Curitiba',
+        'cep' => '81925-185',
+        'numero' => 200,
+        'bairro' => 'Portão',
+    ]);
+
+    // Verifica se o status é 422 (erro de validação)
+    $response->assertStatus(422);
+
+    $response->assertJsonValidationErrors(['email']);
+
+    $response->assertJson([
+        'message' => 'The email has already been taken.',
+    ]);
+    
+});
+
 test('Deletar usuário com sucesso', function (){
     $response = $this->postJson('/api/register', [
         'nome' => 'Teste',

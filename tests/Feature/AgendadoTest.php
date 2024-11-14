@@ -31,6 +31,13 @@ it('impede reserva para datas já ocupadas', function () {
         'formapagamento' => 'pix',
         'data_inicio' => '2024-10-16',
         'data_fim' => '2024-10-18',
+        'servicos_data' => [
+            [
+                'id' => $servico->id,
+                'data_inicio' => '2024-10-16',
+                'data_fim' => '2024-10-18',
+            ]
+        ],
     ]);
 
     $response = $this->postJson("/api/agendados/{$anuncio->id}", [
@@ -39,6 +46,13 @@ it('impede reserva para datas já ocupadas', function () {
         'data_fim' => '2024-10-18',
         'user_id' => $user->id,
         'servicoId' => [$servico->id],
+        'servicos_data' => [
+            [
+                'id' => $servico->id,
+                'data_inicio' => '2024-10-16',
+                'data_fim' => '2024-10-18',
+            ]
+        ],
     ]);
     
 
@@ -112,7 +126,14 @@ it('Pesquisar reserva inexistente', function () {
         'servicoId' => [$servico->id],
         'formapagamento' => 'pix',
         'data_inicio' => '2023-10-10', 
-        'data_fim' => '2023-11-10',    
+        'data_fim' => '2023-11-10',
+        'servicos_data' => [
+            [
+                'id' => $servico->id,
+                'data_inicio' => '2023-10-10',
+                'data_fim' => '2023-11-10',
+            ]
+        ],    
     ]);
 
     $response->assertStatus(201)

@@ -22,7 +22,6 @@ test('cadastro de novo servico com todos os campos corretamente', function () {
 
     $this->actingAs($user);
     $response = $this->postJson('/api/servicos', [
-        'titulo' => 'Serviço de Limpeza',
         'cidade' => 'Curitiba',
         'bairro' => 'Centro',
         'descricao' => 'Limpeza geral de casa.',
@@ -33,7 +32,7 @@ test('cadastro de novo servico com todos os campos corretamente', function () {
 
     $response->assertStatus(201);
     $response->assertJson(['status' => true, 'message' => 'Serviço criado com sucesso.']);
-    $this->assertDatabaseHas('servicos', ['titulo' => 'Serviço de Limpeza']);
+    $this->assertDatabaseHas('servicos', ['cidade' => 'Curitiba']);
 });
 
 test('cadastro de novo servico com campo incorreto', function () {
@@ -44,8 +43,7 @@ test('cadastro de novo servico com campo incorreto', function () {
     $user = User::factory()->create();
     $this->actingAs($user);
     $response = $this->postJson('/api/servicos', [
-        'titulo' => '',//campo vazio
-        'cidade' => 'Curitiba',
+        'cidade' => '',//campo vazio
         'bairro' => 'Centro',
         'descricao' => 'Limpeza geral de casa.',
         'valor' => 150,
@@ -53,7 +51,7 @@ test('cadastro de novo servico com campo incorreto', function () {
         'scategoriaId' => [$scategorias[0]->id, $scategorias[1]->id],
     ]);
     $response->assertStatus(422);
-    $response->assertJsonValidationErrors(['titulo']);
+    $response->assertJsonValidationErrors(['cidade']);
 });
 
 test('pesquisar todos os servicos oferecidos', function () {
@@ -61,26 +59,26 @@ test('pesquisar todos os servicos oferecidos', function () {
     $this->actingAs($user);
 
     // Criar dois serviços para o prestador
-    Servico::factory()->create(['user_id' => $user->id, 'titulo' => 'Serviço de Limpeza']);
-    Servico::factory()->create(['user_id' => $user->id, 'titulo' => 'Serviço de Manutenção']);
+    Servico::factory()->create(['user_id' => $user->id, 'descricao' => 'Serviço de Limpeza']);
+    Servico::factory()->create(['user_id' => $user->id, 'descricao' => 'Serviço de Manutenção']);
 
     $response = $this->getJson('/api/servicos');
 
     $response->assertStatus(200)
-             ->assertJsonFragment(['titulo' => 'Serviço de Limpeza'])
-             ->assertJsonFragment(['titulo' => 'Serviço de Manutenção']);
+             ->assertJsonFragment(['descricao' => 'Serviço de Limpeza'])
+             ->assertJsonFragment(['descricao' => 'Serviço de Manutenção']);
 });
 
 test('pesquisar por servico especifico', function () {
     $user = User::factory()->create();
     $this->actingAs($user);
 
-    $results = Servico::factory()->create(['user_id' => $user->id, 'titulo' => 'Serviço de Limpeza']);
+    $results = Servico::factory()->create(['user_id' => $user->id, 'descricao' => 'Serviço de Limpeza']);
 
     $response = $this->getJson("/api/servicos?search=Limpeza");
 
     $response->assertStatus(200)
-             ->assertJsonFragment(['titulo' => 'Serviço de Limpeza']);
+             ->assertJsonFragment(['descricao' => 'Serviço de Limpeza']);
 });
 
 test('pesquisar servico que nao existe', function () {
@@ -107,7 +105,6 @@ test('alterar servico com sucesso', function () {
 
     $servico = Servico::factory()->create([
         'user_id' => $user->id,
-        'titulo' => 'Serviço de Limpeza',
         'cidade' => 'Curitiba',
         'bairro' => 'Centro',
         'descricao' => 'Limpeza geral de casa.',
@@ -115,7 +112,6 @@ test('alterar servico com sucesso', function () {
     ]);
 
     $response = $this->putJson("/api/servicos/{$servico->id}", [
-        'titulo' => 'Serviço de Manutenção',
         'cidade' => 'Curitiba',
         'bairro' => 'Centro',
         'descricao' => 'Manutenção geral.',
@@ -140,7 +136,6 @@ test('alterar servico com campo vazio', function () {
 
     $servico = Servico::factory()->create([
         'user_id' => $user->id,
-        'titulo' => 'Serviço de Limpeza',
         'cidade' => 'Curitiba',
         'bairro' => 'Centro',
         'descricao' => 'Limpeza geral de casa.',
@@ -148,8 +143,7 @@ test('alterar servico com campo vazio', function () {
     ]);
 
     $response = $this->putJson("/api/servicos/{$servico->id}", [
-        'titulo' => '',//campo vazio
-        'cidade' => 'Curitiba',
+        'cidade' => '',//campo vazio
         'bairro' => 'Centro',
         'descricao' => 'Manutenção geral.',
         'valor' => 200,
@@ -158,7 +152,7 @@ test('alterar servico com campo vazio', function () {
     ]);
 
     $response->assertStatus(422);
-    $response->assertJsonValidationErrors(['titulo']);
+    $response->assertJsonValidationErrors(['cidade']);
 });
 
 test('excluir servico com sucesso', function () {
