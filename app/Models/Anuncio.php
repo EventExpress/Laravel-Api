@@ -24,13 +24,6 @@ class Anuncio extends Model
         'agenda',
     ];
 
-    protected function casts(): array
-    {
-        return [
-            'AnuncioStatus' => AnuncioStatus::class,
-        ];
-    }
-
     public function endereco() {
         return $this->belongsTo(Endereco::class);
     }

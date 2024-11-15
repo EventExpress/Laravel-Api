@@ -6,6 +6,7 @@ use App\Models\Anuncio;
 use App\Models\Categoria;
 use App\Models\Endereco;
 use App\Models\ImagemAnuncio;
+use App\Models\Servico;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -405,6 +406,13 @@ class AnuncioController extends Controller
         ], 200);
     }
 
+    public function getServicosPorCidade(Anuncio $anuncio)
+    {
+        $cidadeAnuncio = $anuncio->endereco->cidade;
 
+        $servicos = Servico::where('cidade', $cidadeAnuncio)->get();
+
+        return response()->json($servicos);
+    }
 
 }
