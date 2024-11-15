@@ -162,10 +162,15 @@ class AnuncioController extends Controller
     {
         $search = $request->input('search');
 
+        if (empty($search)) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Por favor, insira um termo de pesquisa.',
+            ], 400);
+        }
+
         $results = Anuncio::whereHas('endereco', function ($query) use ($search) {
             $query->where('cidade', 'like', "%$search%")
-                ->orWhere('cep', 'like', "%$search%")
-                ->orWhere('numero', 'like', "%$search%")
                 ->orWhere('bairro', 'like', "%$search%");
         })
             ->orWhere('titulo', 'like', "%$search%")
@@ -174,8 +179,6 @@ class AnuncioController extends Controller
             ->orWhereHas('user', function ($query) use ($search) {
                 $query->where('nome', 'like', "%$search%");
             })
-            ->orWhere('valor', 'like', "%$search%")
-            ->orWhere('agenda', 'like', "%$search%")
             ->get();
 
         return response()->json([
@@ -183,6 +186,7 @@ class AnuncioController extends Controller
             'results' => $results,
         ], 200);
     }
+
 
     public function update(Request $request, $id)
     {

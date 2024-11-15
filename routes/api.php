@@ -18,6 +18,7 @@ Route::post('/register', [UserController::class, 'store']);
 Route::post('/login', [AuthController::class, 'login']);
 
 Route::get('/anuncios/noauth', [AnuncioController::class, 'indexNoAuth']);
+Route::get('/anuncios/show', [AnuncioController::class, 'show']);
 
 Route::post("/forgot-password-code", [RecoverPasswordCodeController::class, 'forgotPasswordCode']);
 Route::post("/reset-password-validate-code", [RecoverPasswordCodeController::class, 'resetPasswordValidateCode']);
