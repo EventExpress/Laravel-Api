@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Avaliacao;
 use App\Models\Comprovante;
 use App\Models\Agendado;
 use App\Models\Servico;
@@ -47,7 +48,9 @@ class AgendadoController extends Controller
         }
 
         $user_id = $user->id;
-        $agendados = Agendado::where('user_id', $user_id)->get();
+        $agendados = Agendado::where('user_id', $user_id)
+                            ->where('data_inicio', '>=', now())
+                            ->get();
 
         Log::channel('logagendados')->info('Acessou meus agendados', [
             'user_id' => $user_id,
@@ -151,6 +154,111 @@ class AgendadoController extends Controller
             'historico_agendados' => $agendadosHistorico,
         ], 200);
     }
+
+    public function avaliarComoLocatario(Request $request, $agendadoId)
+    {
+        $user = auth()->user();
+        $agendado = Agendado::findOrFail($agendadoId);
+
+        if ($agendado->user_id !== $user->id) {
+            return response()->json(['error' => 'Você não tem permissão para avaliar este agendamento.'], 403);
+        }
+
+        if (now() <= $agendado->data_fim) {
+            return response()->json(['error' => 'A avaliação só pode ser feita após o término da reserva.'], 403);
+        }
+
+        $request->validate([
+            'avaliacao_anuncio.nota' => 'required|in:1,2,3,4,5',
+            'avaliacao_anuncio.comentario' => 'nullable|string',
+            'avaliacao_servico.*.servico_id' => 'required|exists:servicos,id',
+            'avaliacao_servico.*.nota' => 'required|in:1,2,3,4,5',
+            'avaliacao_servico.*.comentario' => 'nullable|string',
+            'avaliacao_locador.nota' => 'required|in:1,2,3,4,5',
+            'avaliacao_locador.comentario' => 'nullable|string',
+            'avaliacao_prestador.*.prestador_id' => 'required|exists:users,id',
+            'avaliacao_prestador.*.nota' => 'required|in:1,2,3,4,5',
+            'avaliacao_prestador.*.comentario' => 'nullable|string',
+        ]);
+
+        if ($agendado->anuncio_id) {
+            $agendado->anuncio->avaliacoes()->create([
+                'user_id' => $user->id,
+                'nota' => $request->avaliacao_anuncio['nota'],
+                'comentario' => $request->avaliacao_anuncio['comentario'],
+            ]);
+        }
+
+        if ($agendado->servicos) {
+            foreach ($agendado->servicos as $servico) {
+                $avaliacaoServicos = collect($request->avaliacao_servico)->firstWhere('servico_id', $servico->id);
+
+                if ($avaliacaoServicos) {
+                    $servico->avaliacoes()->create([
+                        'user_id' => $user->id,
+                        'nota' => $avaliacaoServicos['nota'],
+                        'comentario' => $avaliacaoServicos['comentario'],
+                    ]);
+                }
+
+
+                $avaliacaoPrestadores = collect($request->avaliacao_prestador)->firstWhere('prestador_id', $servico->user_id);
+
+                if ($avaliacaoPrestadores) {
+                    $servico->user->avaliacoes()->create([
+                        'user_id' => $user->id,
+                        'nota' => $avaliacaoPrestadores['nota'],
+                        'comentario' => $avaliacaoPrestadores['comentario'],
+                    ]);
+                }
+            }
+        }
+
+        if ($agendado->anuncio && $agendado->anuncio->user) {
+            $agendado->anuncio->user->avaliacoes()->create([
+                'user_id' => $user->id,
+                'nota' => $request->avaliacao_locador['nota'],
+                'comentario' => $request->avaliacao_locador['comentario'],
+            ]);
+        }
+
+        return response()->json(['message' => 'Avaliação realizada com sucesso!'], 200);
+    }
+
+    public function avaliarComoLocadorOuPrestador(Request $request, $agendadoId)
+{
+    $user = auth()->user();
+    $agendado = Agendado::findOrFail($agendadoId);
+
+    $isLocador = $agendado->anuncio && $agendado->anuncio->user_id === $user->id;
+    $isPrestador = $agendado->servicos && $agendado->servicos->pluck('user_id')->contains($user->id);
+
+    if (!$isLocador && !$isPrestador) {
+        return response()->json(['error' => 'Você não tem permissão para avaliar este agendamento.'], 403);
+    }
+
+    if (now() <= $agendado->data_fim) {
+        return response()->json(['error' => 'A avaliação só pode ser feita após o término da reserva.'], 403);
+    }
+
+    $request->validate([
+        'avaliacao_locatario.nota' => 'required|in:1,2,3,4,5',
+        'avaliacao_locatario.comentario' => 'nullable|string',
+        'avaliacao_locatario.user_id' => 'required|exists:users,id', 
+    ]);
+
+    if ($request->avaliacao_locatario['user_id'] !== $user->id) {
+        return response()->json(['error' => 'Você não pode avaliar o locatário como outro usuário.'], 403);
+    }
+
+    $agendado->user->avaliacoes()->create([
+        'user_id' => $user->id,
+        'nota' => $request->avaliacao_locatario['nota'],
+        'comentario' => $request->avaliacao_locatario['comentario'],
+    ]);
+
+    return response()->json(['message' => 'Avaliação realizada com sucesso!'], 200);
+}
 
 
     public function create()
