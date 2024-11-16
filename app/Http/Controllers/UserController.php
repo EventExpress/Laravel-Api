@@ -1,6 +1,7 @@
 <?php
 namespace App\Http\Controllers;
 
+use App\Models\Anuncio;
 use App\Models\TypeUser;
 use App\Models\User;
 use App\Models\Endereco;
@@ -283,6 +284,15 @@ class UserController extends Controller
                 'error' => $e->getMessage(),
             ], 500);
         }
+    }
+
+    public function getAvaliacoesUsuario($userId)
+    {
+        $user = User::findOrFail($userId);
+
+        $avaliacoes = $user->avaliacoes;
+
+        return response()->json($avaliacoes);
     }
 
 }

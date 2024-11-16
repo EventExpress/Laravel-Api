@@ -32,6 +32,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user/{id}', [UserController::class, 'show']);
     Route::put('/user/{id}', [UserController::class, 'update']);
     Route::delete('/user/{id}', [UserController::class, 'destroy']); // Soft delete
+    Route::get('/usuarios/{id}/avaliacoes', [UserController::class, 'getAvaliacoesUsuario']);
 
 // Rotas para anúncios
     Route::get('/anuncios', [AnuncioController::class, 'index']);
@@ -43,8 +44,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/anuncios/categoria/titulo/{titulo}', [AnuncioController::class, 'anunciosPorTituloCategoria']);
     Route::get('servicos/cidade/{anuncio}', [AnuncioController::class, 'getServicosPorCidade']);
 
+    Route::get('/anuncios/{id}/avaliacoes', [AnuncioController::class, 'getAvaliacoesAnuncio']);
+
+
 
     Route::get('/categoria', [AnuncioController::class, 'apresentaCategoriaAnuncio']);
+    Route::get('/categoria/servico', [AnuncioController::class, 'apresentaCategoriaServico']);
 
 // Rota de busca por anúncios sem autenticação
     Route::get('/anuncios/buscar', [AnuncioController::class, 'indexNoAuth']);
@@ -57,6 +62,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/servicos/{id}', [ServicoController::class, 'show']);
     Route::put('/servicos/{id}', [ServicoController::class, 'update']);
     Route::delete('/servicos/{id}', [ServicoController::class, 'destroy']);
+    Route::get('servicos/{servicoId}/avaliacoes', [ServicoController::class, 'getAvaliacoesServico']);
+
+
 
     Route::get('/agendados', [AgendadoController::class, 'index']);
     Route::get('/agendados/meus', [AgendadoController::class, 'meusAgendados']);
@@ -68,6 +76,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/agendados/{anuncio_id}', [AgendadoController::class, 'show']);
     Route::put('/agendados/{agendado_id}', [AgendadoController::class, 'update']);
     Route::delete('/agendados/{agendado_id}', [AgendadoController::class, 'destroy']);
+
     Route::post('/agendados/{agendado_id}/avaliar/locatario', [AgendadoController::class, 'avaliarComoLocatario']);
     Route::post('/agendados/{agendado_id}/avaliar/locador-prestador', [AgendadoController::class, 'avaliarComoLocadorOuPrestador']);
 

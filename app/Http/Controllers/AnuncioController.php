@@ -6,7 +6,9 @@ use App\Models\Anuncio;
 use App\Models\Categoria;
 use App\Models\Endereco;
 use App\Models\ImagemAnuncio;
+use App\Models\Scategoria;
 use App\Models\Servico;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -415,4 +417,25 @@ class AnuncioController extends Controller
         return response()->json($servicos);
     }
 
+    public function getAvaliacoesAnuncio($anuncioId)
+    {
+        $anuncio = Anuncio::findOrFail($anuncioId);
+
+        $avaliacoes = $anuncio->avaliacoes;
+
+        if ($avaliacoes->isEmpty()) {
+            return response()->json([
+                'message' => 'Este anúncio ainda não possui avaliações.'
+            ]);
+        }
+
+        return response()->json($avaliacoes);
+    }
+
+
+    public function apresentaCategoriaServico(): JsonResponse
+    {
+        $Scategorias = Scategoria::all();
+        return response()->json(['Scategorias' => $Scategorias], 200);
+    }
 }

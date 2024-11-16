@@ -3,9 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Models\Anuncio;
+use App\Models\Categoria;
 use App\Models\Servico;
 use App\Models\Scategoria;
-use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -201,4 +202,29 @@ class ServicoController extends Controller
             'message' => 'Serviço excluído com sucesso.',
         ], 200);
     }
+
+    public function getAvaliacoesServico($servicoId)
+    {
+        $servico = Servico::find($servicoId);
+
+        if (!$servico) {
+            return response()->json([
+                'message' => 'Serviço não encontrado.'
+            ], 404);
+        }
+
+        $avaliacoes = $servico->avaliacoes;
+
+        if ($avaliacoes->isEmpty()) {
+            return response()->json([
+                'message' => 'Este serviço ainda não possui avaliações.'
+            ]);
+        }
+
+        return response()->json($avaliacoes);
+    }
+
+
+
+
 }
