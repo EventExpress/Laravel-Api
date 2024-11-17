@@ -8,6 +8,7 @@ use App\Models\Endereco;
 use App\Models\ImagemAnuncio;
 use App\Models\Scategoria;
 use App\Models\Servico;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -36,7 +37,7 @@ class AnuncioController extends Controller
     {
         $user = Auth::user();
 
-        if ($user->typeUsers->first()->tipousu !== 'locador') {
+        if ($user->typeUsers->first()->tipousu !== 'Locador') {
             return response()->json([
                 'status' => false,
                 'error' => 'Você não tem permissão para criar anúncios.'
@@ -431,9 +432,25 @@ class AnuncioController extends Controller
             ]);
         }
 
-        return response()->json($avaliacoes);
-    }
+        $mediaAvaliacoes = $avaliacoes->avg('nota');
 
+        $avaliacoesComDetalhes = $avaliacoes->map(function ($avaliacao) {
+            $usuario = User::find($avaliacao->user_id);
+
+            return [
+                'comentario' => $avaliacao->comentario,
+                'usuario' => $usuario ? $usuario->nome : 'Usuário não encontrado',
+                'usuario_id' => $avaliacao->user_id,
+                'nota' => $avaliacao->nota,
+                'data' => $avaliacao->created_at->format('d/m/Y'),
+            ];
+        });
+
+        return response()->json([
+            'media_avaliacoes' => $mediaAvaliacoes,
+            'avaliacoes' => $avaliacoesComDetalhes
+        ]);
+    }
 
     public function apresentaCategoriaServico(): JsonResponse
     {

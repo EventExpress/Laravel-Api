@@ -125,7 +125,7 @@ class ServicoController extends Controller
 
         return response()->json([
             'status' => true,
-            'results' => $results,
+            'results' => $servico,
         ], 200);
     }
 

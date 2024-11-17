@@ -67,9 +67,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
 
     Route::get('/agendados', [AgendadoController::class, 'index']);
-    Route::get('/agendados/meus', [AgendadoController::class, 'meusAgendados']);
-    Route::get('/agendados/meus/servicos', [AgendadoController::class, 'meusServicosAgendados']);
-    Route::get('/agendados/meus/anuncios', [AgendadoController::class, 'meusAnunciosAgendados']);
+    Route::get('/agendados/meus', [AgendadoController::class, 'meusAgendados']); //cliente
+    Route::get('/agendados/meus/servicos', [AgendadoController::class, 'meusServicosAgendados']);  //prestador
+    Route::get('/agendados/meus/anuncios', [AgendadoController::class, 'meusAnunciosAgendados']);  //locador
     Route::get('/agendados/meus/historico', [AgendadoController::class, 'meusHistoricoAgendados']);
     Route::post('/agendados/create', [AgendadoController::class, 'create']);
     Route::post('/agendados/{anuncio_id}', [AgendadoController::class, 'store']);
