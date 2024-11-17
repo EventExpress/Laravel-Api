@@ -172,7 +172,8 @@ class AnuncioController extends Controller
             ], 400);
         }
 
-        $results = Anuncio::whereHas('endereco', function ($query) use ($search) {
+        $results = Anuncio::with('imagens')->
+            whereHas('endereco', function ($query) use ($search) {
             $query->where('cidade', 'like', "%$search%")
                 ->orWhere('bairro', 'like', "%$search%");
         })
@@ -408,8 +409,9 @@ class AnuncioController extends Controller
         ], 200);
     }
 
-    public function getServicosPorCidade(Anuncio $anuncio)
+    public function getServicosPorCidade($anuncio_id)
     {
+        $anuncio = Anuncio::find($anuncio_id);
         $cidadeAnuncio = $anuncio->endereco->cidade;
 
         $servicos = Servico::where('cidade', $cidadeAnuncio)->get();
