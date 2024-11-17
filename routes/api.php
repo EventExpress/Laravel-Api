@@ -76,6 +76,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/agendados/{anuncio_id}', [AgendadoController::class, 'show']);
     Route::put('/agendados/{agendado_id}', [AgendadoController::class, 'update']);
     Route::delete('/agendados/{agendado_id}', [AgendadoController::class, 'destroy']);
+    Route::get('/agendados/{agendadoId}/servicos', [ServicoController::class, 'getServicos']);
+
 
     Route::post('/agendados/{agendado_id}/avaliar/locatario', [AgendadoController::class, 'avaliarComoLocatario']);
     Route::post('/agendados/{agendado_id}/avaliar/locador-prestador', [AgendadoController::class, 'avaliarComoLocadorOuPrestador']);

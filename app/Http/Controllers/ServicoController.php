@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Models\Agendado;
 use App\Models\Anuncio;
 use App\Models\Categoria;
 use App\Models\Servico;
@@ -229,7 +230,19 @@ class ServicoController extends Controller
         return response()->json($avaliacoes);
     }
 
+    public function getServicos($agendadoId)
+    {
+        try {
+            $agendado = Agendado::findOrFail($agendadoId); // Certifique-se de que o Agendado existe
+            $servicos = $agendado->servicos; // Aqui ele pega os serviços relacionados ao agendado
 
+            return response()->json(['servicos' => $servicos]);
+        } catch (\Exception $e) {
+            // Registra o erro nos logs e retorna a resposta apropriada
+            Log::error('Erro ao buscar serviços: ' . $e->getMessage());
+            return response()->json(['error' => 'Erro ao buscar serviços'], 500);
+        }
+    }
 
 
 }

@@ -168,6 +168,20 @@ class AgendadoController extends Controller
             return response()->json(['error' => 'A avaliação só pode ser feita após o término da reserva.'], 403);
         }
 
+        // Verificar se o usuário já avaliou o anúncio
+        if ($agendado->anuncio_id && $agendado->anuncio->avaliacoes()->where('user_id', $user->id)->exists()) {
+            return response()->json(['error' => 'Você já avaliou este anúncio.'], 403);
+        }
+
+        // Verificar se o usuário já avaliou algum dos serviços
+        if ($agendado->servicos) {
+            foreach ($agendado->servicos as $servico) {
+                if ($servico->avaliacoes()->where('user_id', $user->id)->exists()) {
+                    return response()->json(['error' => 'Você já avaliou um dos serviços desta locação.'], 403);
+                }
+            }
+        }
+
         $request->validate([
             'avaliacao_anuncio.nota' => 'required|in:1,2,3,4,5',
             'avaliacao_anuncio.comentario' => 'nullable|string',
@@ -209,6 +223,7 @@ class AgendadoController extends Controller
             return response()->json(['error' => 'Ocorreu um erro ao realizar a avaliação.'], 500);
         }
     }
+
 
     public function avaliarComoLocadorOuPrestador(Request $request, $agendadoId)
     {
