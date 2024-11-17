@@ -298,7 +298,7 @@ class AgendadoController extends Controller
 
             $this->checkReservationConflict($anuncio_id, $request->data_inicio, $request->data_fim);
 
-            $this->checkUnavailableDates($anuncio_id, $inicio, $fim);
+            $this->checkUnavailableDates($anuncio_id, $inicio, $fim, $request->servicos_data ?? []);
 
             $valorTotal = $this->calculateTotalValue($validatedData, $diasReservados, $anuncio_id);
 
@@ -379,9 +379,12 @@ class AgendadoController extends Controller
         }
     }
 
-    protected function checkUnavailableDates($anuncio_id, $inicio, $fim)
+    protected function checkUnavailableDates($anuncio_id, $inicio, $fim, $servicosData)
     {
         $anuncio = Anuncio::findOrFail($anuncio_id);
+
+        $inicioAnuncio = date('Y-m-d', strtotime($inicio));
+        $fimAnuncio = date('Y-m-d', strtotime($fim));
 
         $agenda = json_decode($anuncio->agenda, true) ?? [];
 
@@ -389,13 +392,23 @@ class AgendadoController extends Controller
             return date('Y-m-d', strtotime($data));
         });
 
-        $inicio = date('Y-m-d', strtotime($inicio));
-        $fim = date('Y-m-d', strtotime($fim));
-
-        if ($datasIndisponiveis->contains($inicio) || $datasIndisponiveis->contains($fim)) {
+        if ($datasIndisponiveis->contains($inicioAnuncio) || $datasIndisponiveis->contains($fimAnuncio)) {
             throw new \Exception('As datas selecionadas estão indisponíveis para reserva.', 422);
         }
+
+        foreach ($servicosData as $servicoData) {
+            $dataInicioServico = new \Carbon\Carbon($servicoData['data_inicio']);
+            $dataFimServico = new \Carbon\Carbon($servicoData['data_fim']);
+
+            $dataInicioServico = $dataInicioServico->toDateString();
+            $dataFimServico = $dataFimServico->toDateString();
+
+            if ($dataInicioServico < $inicioAnuncio || $dataFimServico > $fimAnuncio) {
+                throw new \Exception('A data do serviço ' . $servicoData['id'] . ' está fora do período disponível para reserva do anúncio.', 422);
+            }
+        }
     }
+
 
     protected function calculateTotalValue(array $validatedData, int $diasReservados, $anuncio_id)
     {
