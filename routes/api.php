@@ -42,10 +42,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/anuncios/{id}', [AnuncioController::class, 'update']);
     Route::delete('/anuncios/{id}', [AnuncioController::class, 'destroy']);
     Route::get('/anuncios/categoria/titulo/{titulo}', [AnuncioController::class, 'anunciosPorTituloCategoria']);
-    Route::get('servicos/cidade/{anuncio}', [AnuncioController::class, 'getServicosPorCidade']);
+
+    Route::get('servicos/cidade/{anuncio_id}', [AnuncioController::class, 'getServicosPorCidade']);
 
     Route::get('/anuncios/{id}/avaliacoes', [AnuncioController::class, 'getAvaliacoesAnuncio']);
-
 
 
     Route::get('/categoria', [AnuncioController::class, 'apresentaCategoriaAnuncio']);
