@@ -31,7 +31,10 @@ class ServicoController extends Controller
     public function meusServicos()
     {
         $user = Auth::user();
-        if ($user->typeUsers->first()->tipousu !== 'prestador') {
+
+        $types = $user->typeUsers->pluck('tipousu')->toArray();
+
+        if (!in_array('Prestador', $types)) {
             return response()->json([
                 'status' => false,
                 'error' => 'Você não tem permissão para criar serviços.'
@@ -39,12 +42,14 @@ class ServicoController extends Controller
         }
 
         $user_id = $user->id;
-        $servicos = Servico::where('usuario_id', $user_id)->get();
+        $servicos = Servico::where('user_id', $user_id)->get();
+
         return response()->json([
             'status' => true,
             'servicos' => $servicos,
         ], 200);
     }
+
 
     public function create()
     {
