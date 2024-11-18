@@ -110,7 +110,7 @@ class AgendadoController extends Controller
 
         $servicosAgendados = Agendado::whereHas('servicos', function ($query) use ($user) {
             $query->where('user_id', $user->id);
-        })->with('servicos', 'user')->get();
+        })->with('servicos.scategorias', 'user')->get();
 
         return response()->json([
             'status' => true,
