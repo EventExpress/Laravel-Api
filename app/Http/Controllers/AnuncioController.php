@@ -19,7 +19,7 @@ class AnuncioController extends Controller
 {
     public function index()
     {
-        $anuncios = Anuncio::with('imagens')->get();
+        $anuncios = Anuncio::with('imagens', 'endereco')->get();
 
         return response()->json([
             'status' => true,
