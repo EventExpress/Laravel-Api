@@ -47,7 +47,9 @@ class AnuncioController extends Controller
         }
 
         $user_id = $user->id;
-        $anuncios = Anuncio::where('user_id', $user_id)->get();
+        $anuncios = Anuncio::where('user_id', $user_id)
+            ->with('imagens')
+            ->get();
 
         return response()->json([
             'status' => true,
