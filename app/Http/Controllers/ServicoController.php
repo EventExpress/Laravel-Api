@@ -42,8 +42,9 @@ class ServicoController extends Controller
             ], 403);
         }
 
-        $user_id = $user->id;
-        $servicos = Servico::where('user_id', $user_id)->get();
+        $servicos = Servico::where('user_id', $user->id)
+            ->with('scategorias', 'user')
+            ->get();
 
         return response()->json([
             'status' => true,
