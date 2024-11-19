@@ -413,12 +413,16 @@ class AnuncioController extends Controller
     public function getServicosPorCidade($anuncio_id)
     {
         $anuncio = Anuncio::find($anuncio_id);
+
         $cidadeAnuncio = $anuncio->endereco->cidade;
 
-        $servicos = Servico::where('cidade', $cidadeAnuncio)->get();
+        $servicos = Servico::where('cidade', $cidadeAnuncio)
+            ->with('scategorias')
+            ->get();
 
         return response()->json($servicos);
     }
+
 
     public function getAvaliacoesAnuncio($anuncioId)
     {
