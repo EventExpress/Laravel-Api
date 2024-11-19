@@ -37,13 +37,24 @@ class AnuncioController extends Controller
     {
         $user = Auth::user();
 
-        if ($user->typeUsers->first()->tipousu !== 'Locador') {
+        $types = $user->typeUsers->pluck('tipousu')->toArray();
+
+        if (!in_array('Locador', $types)) {
             return response()->json([
                 'status' => false,
                 'error' => 'Você não tem permissão para criar anúncios.'
             ], 403);
         }
+
+        $user_id = $user->id;
+        $anuncios = Anuncio::where('user_id', $user_id)->get();
+
+        return response()->json([
+            'status' => true,
+            'anuncios' => $anuncios,
+        ], 200);
     }
+
 
     public function indexNoAuth()
     {
