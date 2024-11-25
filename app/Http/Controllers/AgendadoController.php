@@ -173,14 +173,7 @@ class AgendadoController extends Controller
             return response()->json(['error' => 'Você já avaliou este anúncio.'], 403);
         }
 
-        // Verificar se o usuário já avaliou algum dos serviços
-        if ($agendado->servicos) {
-            foreach ($agendado->servicos as $servico) {
-                if ($servico->avaliacoes()->where('user_id', $user->id)->exists()) {
-                    return response()->json(['error' => 'Você já avaliou um dos serviços desta locação.'], 403);
-                }
-            }
-        }
+        
 
         $request->validate([
             'avaliacao_anuncio.nota' => 'required|in:1,2,3,4,5',
@@ -357,7 +350,7 @@ class AgendadoController extends Controller
             'formapagamento' => 'required|string',
             'data_inicio' => 'required|date',
             'data_fim' => 'required|date|after_or_equal:data_inicio',
-            'servicos_data' => 'required|array',
+            'servicos_data' => 'nullable|array',
             'servicos_data.*.id' => 'required|integer|exists:servicos,id',
             'servicos_data.*.data_inicio' => 'required|date',
             'servicos_data.*.data_fim' => 'required|date|after_or_equal:servicos_data.*.data_inicio',
